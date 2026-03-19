@@ -3,17 +3,14 @@ import * as animalController from "../controllers/animalController";
 
 const router = Router();
 
-// ? Availability FIRST (important)
-router.get("/availability", async (req, res) => {
-  res.json([]);
-});
+// Availability endpoint
+router.get("/availability", animalController.getAvailability);
 
-// ? CRUD
+// CRUD
 router.get("/", animalController.getAnimals);
 router.get("/:id", animalController.getAnimalById);
 router.post("/", animalController.createAnimal);
-router.put("/:id", animalController.updateAnimal);
+router.patch("/:id", animalController.updateAnimal);
 router.delete("/:id", animalController.deleteAnimal);
 
-// ? THIS FIXES YOUR ERROR
 export default router;

@@ -13,18 +13,17 @@ datasource db {
 }
 
 model Animal {
-  id            Int            @id @default(autoincrement())
-  tagNumber     String         @unique
-  name          String
-  breed         String
-  status        String         // e.g., "healthy", "injured", "rented"
-category    String   @default("rodeo")
-  dateOfBirth   DateTimecategory: z.string().optional(),
-
-  notes         String?
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-  rentals       Rental[]
+  id          Int            @id @default(autoincrement())
+  tagNumber   String         @unique
+  name        String
+  breed       String
+  status      String         // e.g., "healthy", "injured", "rented"
+  category    String         @default("rodeo")
+  dateOfBirth DateTime
+  notes       String?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  rentals     Rental[]
   healthRecords HealthRecord[]
 }
 

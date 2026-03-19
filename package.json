@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx server.ts",
+    "frontend": "vite",
     "build": "prisma generate && vite build",
     "preview": "vite preview",
     "clean": "rm -rf dist",

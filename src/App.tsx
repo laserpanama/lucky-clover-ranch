@@ -112,7 +112,7 @@ function EditAnimalModal({ animal, onClose, onSuccess }: { animal: Animal; onClo
     if (!form.name || !form.tagNumber || !form.breed || !form.dateOfBirth) { setError('All fields required.'); return; }
     setLoading(true); setError('');
     try {
-      const res = await fetch(`${API}/animals/${animal.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form) });
+      const res = await fetch(`${API}/animals/${animal.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form) });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed');
       onSuccess();

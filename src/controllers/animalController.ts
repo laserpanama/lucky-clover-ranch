@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import * as animalService from '../services/animalService.ts';
+import * as animalService from '../services/animalService';
 import { z } from 'zod';
 
 const animalSchema = z.object({
@@ -7,11 +7,21 @@ const animalSchema = z.object({
   name: z.string().min(1),
   breed: z.string().min(1),
   status: z.string().min(1),
+  category: z.string().optional(),
   dateOfBirth: z.string().transform((val) => new Date(val)),
   notes: z.string().optional(),
 });
 
-export const getAllAnimals = async (req: Request, res: Response, next: NextFunction) => {
+export const getAvailability = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const animals = await animalService.getAnimalsWithAvailability();
+    res.json(animals);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getAnimals = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const animals = await animalService.getAllAnimals();
     res.json(animals);

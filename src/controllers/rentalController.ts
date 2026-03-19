@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import * as rentalService from '../services/rentalService.ts';
+import * as rentalService from '../services/rentalService';
 import { z } from 'zod';
 
 const rentalSchema = z.object({

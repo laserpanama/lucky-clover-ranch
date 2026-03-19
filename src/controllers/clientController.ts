@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import * as clientService from '../services/clientService.ts';
+import * as clientService from '../services/clientService';
 import { z } from 'zod';
 
 const clientSchema = z.object({

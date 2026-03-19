@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import * as healthService from '../services/healthService.ts';
+import * as healthService from '../services/healthService';
 import { z } from 'zod';
 
 const healthSchema = z.object({

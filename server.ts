@@ -3,11 +3,11 @@ import cors from 'cors';
 import bodyParser from 'body-parser';
 import path from 'path';
 import { createServer as createViteServer } from 'vite';
-import animalRoutes from './src/routes/animalRoutes.ts';
-import clientRoutes from './src/routes/clientRoutes.ts';
-import rentalRoutes from './src/routes/rentalRoutes.ts';
-import healthRoutes from './src/routes/healthRoutes.ts';
-import userRoutes from './src/routes/userRoutes.ts';
+import animalRoutes from './src/routes/animalRoutes';
+import clientRoutes from './src/routes/clientRoutes';
+import rentalRoutes from './src/routes/rentalRoutes';
+import healthRoutes from './src/routes/healthRoutes';
+import userRoutes from './src/routes/userRoutes';
 
 async function startServer() {
   const app = express();

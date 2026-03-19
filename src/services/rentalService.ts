@@ -1,4 +1,4 @@
-import prisma from '../lib/prisma.ts';
+import prisma from '../lib/prisma';
 
 export const getAllRentals = async () => {
   return prisma.rental.findMany({
