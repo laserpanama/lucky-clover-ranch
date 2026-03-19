@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import Dashboard from './Dashboard';
 
-const API = 'http://localhost:3000/api';
+const API = '/api';
 
 interface Animal { id: number; tagNumber: string; name: string; breed: string; status: string; dateOfBirth: string; notes?: string; category: string; }
 interface Client { id: number; name: string; phone: string; email: string; organization?: string; }

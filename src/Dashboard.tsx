@@ -5,7 +5,7 @@ import {
   TrendingUp, Beef, Calendar, AlertTriangle
 } from "lucide-react";
 
-const API = "http://localhost:3000/api";
+const API = "/api";
 
 interface Animal { id: number; name: string; tagNumber: string; status: string; }
 interface Rental {
