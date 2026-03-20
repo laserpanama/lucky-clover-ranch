@@ -274,7 +274,7 @@ export default function App() {
     <div className="min-h-screen bg-[#F4F6F8] text-[#1A1A1A] font-sans">
       <aside className="fixed left-0 top-0 h-full w-64 bg-white border-r border-slate-200 p-6 z-10 flex flex-col">
         <div className="flex items-center gap-3 mb-8">
-          <div className="w-10 h-10 bg-emerald-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-emerald-200"><Beef className="w-6 h-6" /></div>
+          <div className="w-10 h-10 bg-emerald-600 rounded-xl flex items-center justify-center text-white"><Beef className="w-6 h-6" /></div>
           <div><h1 className="font-black text-lg tracking-tight leading-none">Lucky Clover</h1><p className="text-xs text-slate-400 font-medium">Ranch Manager</p></div>
         </div>
         <nav className="space-y-1">
@@ -337,8 +337,8 @@ export default function App() {
                           className="bg-white border border-slate-200 rounded-2xl p-6 hover:shadow-lg hover:-translate-y-0.5 transition-all group relative">
                           {/* Edit / Delete buttons */}
                           <div className="absolute top-4 right-4 flex gap-1 ">
-                            <button onClick={() => setEditAnimal(animal)} className="p-1.5 bg-slate-100 hover:bg-blue-100 hover:text-blue-600 rounded-lg transition-colors"><Pencil className="w-3.5 h-3.5" /></button>
-                            <button onClick={() => setDeleteAnimal(animal)} className="p-1.5 bg-slate-100 hover:bg-rose-100 hover:text-rose-600 rounded-lg transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
+                            <button onClick={() => setEditAnimal(animal)} className="p-1.5 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"><Pencil className="w-3.5 h-3.5" /></button>
+                            <button onClick={() => setDeleteAnimal(animal)} className="p-1.5 bg-slate-100 hover:bg-red-50 hover:text-red-600 rounded-lg transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
                           </div>
                           <div className="flex justify-between items-start mb-4">
                             <div className="w-11 h-11 bg-slate-50 rounded-xl flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">{cat.emoji}</div>
@@ -387,7 +387,7 @@ export default function App() {
                     <motion.div key={rental.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-white border border-slate-200 rounded-2xl p-5 hover:shadow-md transition-all">
                       <div className="flex justify-between items-start mb-4">
                         <div>
-                          <h4 className="text-lg font-bold text-slate-900 group-hover:text-blue-700 transition-colors">
+                          <h4 className="text-lg font-bold text-slate-900">
                             {rental.animal?.name ?? `Animal #${rental.animalId}`}
                           </h4>
                           <div className="flex items-center text-slate-500 text-sm mt-1">

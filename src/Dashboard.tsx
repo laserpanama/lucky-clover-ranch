@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react";
 import { motion } from "motion/react";
 import {
-  DollarSign, Activity, CheckCircle2, Clock,
-  TrendingUp, Beef, Calendar, AlertTriangle, Plus
+  DollarSign, Activity, TrendingUp, Beef, Calendar, AlertTriangle, Plus
 } from "lucide-react";
 
 const API = '/api';
@@ -14,28 +13,27 @@ interface Rental {
   animal: Animal; client: { id: number; name: string; };
 }
 
-// Cohesive KPI Card - same style for all metrics
-function StatCard({
-  label, value, sub, icon: Icon, delay
-}: {
-  label: string; value: string; sub?: string;
-  icon: any; delay: number;
+// UNIFIED KPI CARD - same style for ALL metrics
+function StatCard({ label, value, sub, icon: Icon, delay }: {
+  label: string; value: string; sub?: string; icon: any; delay: number;
 }) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 12 }}
+      initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay, duration: 0.25 }}
-      className="bg-white rounded-xl p-5 border border-slate-200 hover:border-slate-300 hover:shadow-sm transition-all"
+      transition={{ delay, duration: 0.2 }}
+      className="bg-white rounded-xl p-5 border border-slate-200"
     >
-      <div className="flex items-center justify-between mb-3">
-        <div className="w-10 h-10 rounded-lg bg-emerald-600 flex items-center justify-center">
-          <Icon className="w-5 h-5 text-white" />
+      <div className="flex items-center gap-3 mb-3">
+        <div className="w-9 h-9 rounded-lg bg-emerald-600 flex items-center justify-center flex-shrink-0">
+          <Icon className="w-4 h-4 text-white" />
+        </div>
+        <div className="min-w-0">
+          <div className="text-xl font-bold text-slate-900 truncate">{value}</div>
         </div>
       </div>
-      <div className="text-2xl font-bold text-slate-900 mb-0.5">{value}</div>
-      <div className="text-sm font-semibold text-slate-700">{label}</div>
-      {sub && <div className="text-xs text-slate-500 mt-1">{sub}</div>}
+      <div className="text-sm font-medium text-slate-700">{label}</div>
+      {sub && <div className="text-xs text-slate-500 mt-0.5">{sub}</div>}
     </motion.div>
   );
 }
@@ -90,7 +88,7 @@ export default function Dashboard({ onCreateRental }: { onCreateRental?: () => v
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="w-8 h-8 border-3 border-emerald-600 border-t-transparent rounded-full animate-spin" />
+        <div className="w-8 h-8 border-[3px] border-emerald-600 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -98,13 +96,13 @@ export default function Dashboard({ onCreateRental }: { onCreateRental?: () => v
   return (
     <div className="space-y-6">
 
-      {/* KPI Cards - unified style, no rainbow */}
+      {/* KPI Cards - unified emerald style */}
       <div className="grid grid-cols-2 lg:grid-cols-6 gap-4">
-        <StatCard label="Monthly Revenue" value={`$${monthRevenue.toLocaleString()}`} icon={DollarSign} delay={0} />
-        <StatCard label="All-Time Revenue" value={`$${totalRevenue.toLocaleString()}`} icon={TrendingUp} delay={0.03} />
+        <StatCard label="Revenue (Month)" value={`$${monthRevenue.toLocaleString()}`} icon={DollarSign} delay={0} />
+        <StatCard label="Revenue (All Time)" value={`$${totalRevenue.toLocaleString()}`} icon={TrendingUp} delay={0.03} />
         <StatCard label="Active Rentals" value={String(activeRentals.length)} sub={`${validRentals.length} total`} icon={Activity} delay={0.06} />
         <StatCard label="Available" value={`${availableAnimals.length}/${animals.length}`} sub="animals" icon={Beef} delay={0.09} />
-        <StatCard label="Upcoming" value={String(upcomingRentals.length)} sub="next 7 days" icon={Clock} delay={0.12} />
+        <StatCard label="Upcoming" value={String(upcomingRentals.length)} sub="next 7 days" icon={Calendar} delay={0.12} />
         <StatCard label="Avg Value" value={`$${avgRentalValue.toLocaleString()}`} sub="per contract" icon={DollarSign} delay={0.15} />
       </div>
 
@@ -112,62 +110,52 @@ export default function Dashboard({ onCreateRental }: { onCreateRental?: () => v
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
         {/* Availability */}
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="bg-white rounded-xl border border-slate-200 overflow-hidden"
-        >
-          <div className="px-5 py-3.5 border-b border-slate-100 flex items-center justify-between">
+        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+          <div className="px-5 py-3 border-b border-slate-100 flex items-center justify-between">
             <h3 className="font-semibold text-slate-900">Animal Availability</h3>
-            <span className="text-xs font-medium text-slate-400 uppercase tracking-wide">Right now</span>
+            <span className="text-xs font-medium text-slate-400">Current</span>
           </div>
-          <div className="p-5 space-y-2">
+          <div className="p-4 space-y-1">
             {animals.length === 0 && (
-              <p className="text-sm text-slate-400 text-center py-8">No animals registered.</p>
+              <p className="text-sm text-slate-400 text-center py-6">No animals registered.</p>
             )}
             {animals.map(animal => {
               const isRented = rentedAnimalIds.has(animal.id);
               return (
-                <div key={animal.id} className="flex items-center justify-between py-2 border-b border-slate-50 last:border-0">
+                <div key={animal.id} className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-slate-50 transition-colors">
                   <div className="flex items-center gap-3">
-                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isRented ? 'bg-slate-100' : 'bg-emerald-50'}`}>
-                      <Beef className={`w-4 h-4 ${isRented ? 'text-slate-400' : 'text-emerald-600'}`} />
+                    <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center">
+                      <Beef className="w-4 h-4 text-slate-500" />
                     </div>
                     <div>
                       <div className="font-medium text-sm text-slate-900">{animal.name}</div>
                       <div className="text-xs text-slate-400 font-mono">{animal.tagNumber}</div>
                     </div>
                   </div>
-                  <span className={`px-2.5 py-1 rounded text-xs font-semibold ${isRented ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-600'}`}>
+                  <span className={`px-2 py-0.5 rounded text-xs font-medium ${isRented ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-600'}`}>
                     {isRented ? 'Rented' : 'Available'}
                   </span>
                 </div>
               );
             })}
           </div>
-        </motion.div>
+        </div>
 
         {/* Upcoming Rentals */}
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.25 }}
-          className="bg-white rounded-xl border border-slate-200 overflow-hidden"
-        >
-          <div className="px-5 py-3.5 border-b border-slate-100 flex items-center justify-between">
+        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+          <div className="px-5 py-3 border-b border-slate-100 flex items-center justify-between">
             <h3 className="font-semibold text-slate-900">Upcoming Rentals</h3>
-            <span className="text-xs font-medium text-slate-400 uppercase tracking-wide">Next 7 days</span>
+            <span className="text-xs font-medium text-slate-400">Next 7 days</span>
           </div>
-          <div className="p-5 space-y-2">
+          <div className="p-4 space-y-1">
             {upcomingRentals.length === 0 && (
-              <div className="text-center py-10 bg-slate-50 rounded-lg border border-dashed border-slate-200">
+              <div className="text-center py-8 bg-slate-50 rounded-lg border border-dashed border-slate-200">
                 <Calendar className="w-8 h-8 text-slate-300 mx-auto mb-2" />
-                <p className="text-sm text-slate-500 font-medium mb-3">No rentals starting this week</p>
+                <p className="text-sm text-slate-500 mb-3">No rentals starting this week</p>
                 {onCreateRental && (
                   <button
                     onClick={onCreateRental}
-                    className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg font-semibold text-sm transition-colors"
+                    className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg font-medium text-sm"
                   >
                     <Plus className="w-4 h-4" />
                     Create Rental
@@ -178,41 +166,32 @@ export default function Dashboard({ onCreateRental }: { onCreateRental?: () => v
             {upcomingRentals.map(rental => {
               const daysUntil = Math.ceil((new Date(rental.startDate).getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
               return (
-                <div key={rental.id} className="flex items-center justify-between py-2 border-b border-slate-50 last:border-0">
+                <div key={rental.id} className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-slate-50 transition-colors">
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center">
                       <Calendar className="w-4 h-4 text-slate-500" />
                     </div>
                     <div>
-                      <div className="font-medium text-sm text-slate-900">
-                        {rental.animal?.name ?? `Animal #${rental.animalId}`}
-                      </div>
-                      <div className="text-xs text-slate-500">
-                        {rental.client?.name ?? `Client #${rental.clientId}`} · ${Number(rental.price).toLocaleString()}
-                      </div>
+                      <div className="font-medium text-sm text-slate-900">{rental.animal?.name ?? `Animal #${rental.animalId}`}</div>
+                      <div className="text-xs text-slate-500">{rental.client?.name ?? `Client #${rental.clientId}`} · ${Number(rental.price).toLocaleString()}</div>
                     </div>
                   </div>
-                  <span className="text-xs font-semibold text-slate-600 bg-slate-100 px-2 py-0.5 rounded">
-                    {daysUntil === 1 ? "Tomorrow" : `${daysUntil}d`}
+                  <span className="text-xs font-medium text-slate-600 bg-slate-100 px-2 py-0.5 rounded">
+                    {daysUntil === 1 ? 'Tomorrow' : `${daysUntil}d`}
                   </span>
                 </div>
               );
             })}
           </div>
-        </motion.div>
+        </div>
       </div>
 
       {/* Active Contracts Table */}
       {activeRentals.length > 0 && (
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          className="bg-white rounded-xl border border-slate-200 overflow-hidden"
-        >
-          <div className="px-5 py-3.5 border-b border-slate-100 flex items-center justify-between">
+        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+          <div className="px-5 py-3 border-b border-slate-100 flex items-center justify-between">
             <h3 className="font-semibold text-slate-900">Active Contracts</h3>
-            <span className="flex items-center gap-1.5 text-xs font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded">
+            <span className="flex items-center gap-1.5 text-xs font-medium text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded">
               <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
               {activeRentals.length} live
             </span>
@@ -221,10 +200,10 @@ export default function Dashboard({ onCreateRental }: { onCreateRental?: () => v
             <table className="w-full text-left">
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-100">
-                  <th className="px-5 py-2.5 text-xs font-semibold text-slate-500 uppercase tracking-wide">Animal</th>
-                  <th className="px-5 py-2.5 text-xs font-semibold text-slate-500 uppercase tracking-wide">Client</th>
-                  <th className="px-5 py-2.5 text-xs font-semibold text-slate-500 uppercase tracking-wide">End Date</th>
-                  <th className="px-5 py-2.5 text-xs font-semibold text-slate-500 uppercase tracking-wide text-right">Value</th>
+                  <th className="px-5 py-2.5 text-xs font-medium text-slate-500 uppercase">Animal</th>
+                  <th className="px-5 py-2.5 text-xs font-medium text-slate-500 uppercase">Client</th>
+                  <th className="px-5 py-2.5 text-xs font-medium text-slate-500 uppercase">End Date</th>
+                  <th className="px-5 py-2.5 text-xs font-medium text-slate-500 uppercase text-right">Value</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
@@ -232,27 +211,21 @@ export default function Dashboard({ onCreateRental }: { onCreateRental?: () => v
                   const daysLeft = Math.ceil((new Date(rental.endDate).getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
                   return (
                     <tr key={rental.id} className="hover:bg-slate-50/50 transition-colors">
-                      <td className="px-5 py-3 font-medium text-slate-900 text-sm">
-                        {rental.animal?.name ?? `#${rental.animalId}`}
-                      </td>
-                      <td className="px-5 py-3 text-sm text-slate-600">
-                        {rental.client?.name ?? `#${rental.clientId}`}
-                      </td>
+                      <td className="px-5 py-3 font-medium text-slate-900 text-sm">{rental.animal?.name ?? `#${rental.animalId}`}</td>
+                      <td className="px-5 py-3 text-sm text-slate-600">{rental.client?.name ?? `#${rental.clientId}`}</td>
                       <td className="px-5 py-3 text-sm">
                         <span className={`font-medium ${daysLeft <= 2 ? 'text-red-600' : 'text-slate-600'}`}>
                           {new Date(rental.endDate).toLocaleDateString()} · {daysLeft}d left
                         </span>
                       </td>
-                      <td className="px-5 py-3 text-sm font-semibold text-slate-900 text-right">
-                        ${Number(rental.price).toLocaleString()}
-                      </td>
+                      <td className="px-5 py-3 text-sm font-semibold text-slate-900 text-right">${Number(rental.price).toLocaleString()}</td>
                     </tr>
                   );
                 })}
               </tbody>
             </table>
           </div>
-        </motion.div>
+        </div>
       )}
     </div>
   );
