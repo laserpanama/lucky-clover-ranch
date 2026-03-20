@@ -85,6 +85,9 @@ export default function Dashboard({ onCreateRental }: { onCreateRental?: () => v
   const availableAnimals = animals.filter(a => !rentedAnimalIds.has(a.id));
   const avgRentalValue = rentals.length > 0 ? Math.round(totalRevenue / rentals.length) : 0;
 
+  // Validate: filter out rentals with illogical date ranges (start > end)
+  const validRentals = rentals.filter(r => new Date(r.startDate) <= new Date(r.endDate));
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -103,7 +106,7 @@ export default function Dashboard({ onCreateRental }: { onCreateRental?: () => v
           value={`$${monthRevenue.toLocaleString()}`}
           sub={`$${totalRevenue.toLocaleString()} all time`}
           icon={DollarSign}
-          accent="bg-emerald-50 text-emerald-600"
+          accent="bg-emerald-100 text-emerald-700"
           delay={0}
         />
         <StatCard
@@ -111,7 +114,7 @@ export default function Dashboard({ onCreateRental }: { onCreateRental?: () => v
           value={String(activeRentals.length)}
           sub={`${rentals.length} total contracts`}
           icon={Activity}
-          accent="bg-blue-50 text-blue-600"
+          accent="bg-blue-100 text-blue-700"
           delay={0.05}
         />
         <StatCard
@@ -119,7 +122,7 @@ export default function Dashboard({ onCreateRental }: { onCreateRental?: () => v
           value={`${availableAnimals.length}/${animals.length}`}
           sub={`${rentedAnimalIds.size} currently rented`}
           icon={Beef}
-          accent="bg-amber-50 text-amber-600"
+          accent="bg-amber-100 text-amber-700"
           delay={0.1}
         />
         <StatCard
@@ -127,7 +130,7 @@ export default function Dashboard({ onCreateRental }: { onCreateRental?: () => v
           value={String(upcomingRentals.length)}
           sub="new rentals starting"
           icon={Clock}
-          accent="bg-violet-50 text-violet-600"
+          accent="bg-violet-100 text-violet-700"
           delay={0.15}
         />
         <StatCard
@@ -135,7 +138,7 @@ export default function Dashboard({ onCreateRental }: { onCreateRental?: () => v
           value={`$${avgRentalValue.toLocaleString()}`}
           sub={`across ${rentals.length} contracts`}
           icon={TrendingUp}
-          accent="bg-teal-50 text-teal-600"
+          accent="bg-teal-100 text-teal-700"
           delay={0.2}
         />
       </div>
@@ -196,7 +199,7 @@ export default function Dashboard({ onCreateRental }: { onCreateRental?: () => v
           </div>
           <div className="p-6 space-y-3">
             {upcomingRentals.length === 0 && (
-              <div className="text-center py-10">
+              <div className="text-center py-12 bg-slate-50 rounded-xl border border-dashed border-slate-300">
                 <Calendar className="w-10 h-10 text-slate-300 mx-auto mb-3" />
                 <p className="text-sm text-slate-500 font-medium mb-4">No rentals starting in the next 7 days</p>
                 {onCreateRental && (
