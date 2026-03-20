@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { motion } from "motion/react";
 import {
   DollarSign, Activity, CheckCircle2, Clock,
-  TrendingUp, Beef, Calendar, AlertTriangle
+  TrendingUp, Beef, Calendar, AlertTriangle, Plus
 } from "lucide-react";
 
 const API = '/api';
@@ -25,22 +25,22 @@ function StatCard({
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay, duration: 0.3 }}
-      className="bg-white rounded-2xl p-6 border border-slate-100 hover:shadow-lg hover:shadow-slate-200/60 hover:-translate-y-0.5 transition-all"
+      className="bg-white rounded-2xl p-6 border-2 border-slate-200 hover:border-emerald-300 hover:shadow-xl hover:shadow-emerald-100/40 hover:-translate-y-1 transition-all"
     >
-      <div className="flex items-start justify-between mb-4">
-        <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${accent}`}>
-          <Icon className="w-5 h-5" />
+      <div className="flex items-start justify-between mb-3">
+        <div className={`w-12 h-12 rounded-xl flex items-center justify-center shadow-sm ${accent}`}>
+          <Icon className="w-6 h-6" />
         </div>
-        <TrendingUp className="w-4 h-4 text-slate-200" />
+        <TrendingUp className="w-5 h-5 text-emerald-400" />
       </div>
-      <div className="text-3xl font-black text-slate-900 mb-1 tracking-tight">{value}</div>
-      <div className="text-sm font-semibold text-slate-500">{label}</div>
-      {sub && <div className="text-xs text-slate-400 mt-1">{sub}</div>}
+      <div className="text-4xl font-black text-slate-900 mb-1 tracking-tight">{value}</div>
+      <div className="text-sm font-bold text-slate-700">{label}</div>
+      {sub && <div className="text-xs text-slate-500 mt-1 font-medium">{sub}</div>}
     </motion.div>
   );
 }
 
-export default function Dashboard() {
+export default function Dashboard({ onCreateRental }: { onCreateRental?: () => void }) {
   const [rentals, setRentals] = useState<Rental[]>([]);
   const [animals, setAnimals] = useState<Animal[]>([]);
   const [loading, setLoading] = useState(true);
@@ -83,6 +83,7 @@ export default function Dashboard() {
 
   const rentedAnimalIds = new Set(activeRentals.map(r => r.animalId));
   const availableAnimals = animals.filter(a => !rentedAnimalIds.has(a.id));
+  const avgRentalValue = rentals.length > 0 ? Math.round(totalRevenue / rentals.length) : 0;
 
   if (loading) {
     return (
@@ -96,7 +97,7 @@ export default function Dashboard() {
     <div className="space-y-8">
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
         <StatCard
           label="Revenue This Month"
           value={`$${monthRevenue.toLocaleString()}`}
@@ -129,6 +130,14 @@ export default function Dashboard() {
           accent="bg-violet-50 text-violet-600"
           delay={0.15}
         />
+        <StatCard
+          label="Avg Rental Value"
+          value={`$${avgRentalValue.toLocaleString()}`}
+          sub={`across ${rentals.length} contracts`}
+          icon={TrendingUp}
+          accent="bg-teal-50 text-teal-600"
+          delay={0.2}
+        />
       </div>
 
       {/* Two columns: Availability + Upcoming */}
@@ -154,7 +163,7 @@ export default function Dashboard() {
               return (
                 <div key={animal.id} className="flex items-center justify-between py-2.5 border-b border-slate-50 last:border-0">
                   <div className="flex items-center gap-3">
-                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isRented ? 'bg-rose-50 text-rose-400' : 'bg-emerald-50 text-emerald-500'}`}>
+                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isRented ? 'bg-red-100 text-red-500' : 'bg-emerald-100 text-emerald-600'}`}>
                       <Beef className="w-4 h-4" />
                     </div>
                     <div>
@@ -162,7 +171,7 @@ export default function Dashboard() {
                       <div className="text-xs text-slate-400 font-mono">{animal.tagNumber}</div>
                     </div>
                   </div>
-                  <span className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold ${isRented ? 'bg-rose-50 text-rose-600' : 'bg-emerald-50 text-emerald-600'}`}>
+                  <span className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold ${isRented ? 'bg-red-100 text-red-600' : 'bg-emerald-100 text-emerald-700'}`}>
                     {isRented
                       ? <><AlertTriangle className="w-3 h-3" />Rented</>
                       : <><CheckCircle2 className="w-3 h-3" />Available</>
@@ -187,9 +196,18 @@ export default function Dashboard() {
           </div>
           <div className="p-6 space-y-3">
             {upcomingRentals.length === 0 && (
-              <div className="text-center py-8">
-                <Calendar className="w-8 h-8 text-slate-200 mx-auto mb-2" />
-                <p className="text-sm text-slate-400">No upcoming rentals this week.</p>
+              <div className="text-center py-10">
+                <Calendar className="w-10 h-10 text-slate-300 mx-auto mb-3" />
+                <p className="text-sm text-slate-500 font-medium mb-4">No rentals starting in the next 7 days</p>
+                {onCreateRental && (
+                  <button
+                    onClick={onCreateRental}
+                    className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl font-bold text-sm transition-all"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Create Rental
+                  </button>
+                )}
               </div>
             )}
             {upcomingRentals.map(rental => {

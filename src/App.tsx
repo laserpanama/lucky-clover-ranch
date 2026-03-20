@@ -297,10 +297,6 @@ export default function App() {
             ))}
           </div>
         </div>
-        <div className="p-4 bg-slate-900 rounded-2xl text-white mt-4">
-          <p className="text-xs text-slate-400 mb-1 font-bold uppercase tracking-wider">API Status</p>
-          <div className="flex items-center gap-2"><div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse" /><p className="text-sm font-semibold">localhost:3000</p></div>
-        </div>
       </aside>
 
       <main className="ml-64 p-10">
@@ -321,7 +317,7 @@ export default function App() {
           <AnimatePresence mode="wait">
             <motion.div key={activeTab} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.15 }}>
 
-              {activeTab === 'dashboard' && <Dashboard />}
+              {activeTab === 'dashboard' && <Dashboard onCreateRental={() => { setActiveTab('rentals'); setShowModal(true); }} />}
 
               {activeTab === 'animals' && (
                 <div>
