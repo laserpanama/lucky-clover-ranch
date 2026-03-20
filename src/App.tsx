@@ -15,9 +15,9 @@ interface Rental { id: number; animalId: number; clientId: number; startDate: st
 type Tab = 'dashboard' | 'animals' | 'clients' | 'rentals';
 
 const CATEGORIES = [
-  { value: 'rodeo',    label: 'Rodeo',    emoji: '🤠', color: 'bg-amber-50 text-amber-700' },
-  { value: 'beef',     label: 'Beef',     emoji: '🥩', color: 'bg-rose-50 text-rose-700' },
-  { value: 'breeding', label: 'Breeding', emoji: '🐃', color: 'bg-violet-50 text-violet-700' },
+  { value: 'rodeo',    label: 'Rodeo',    emoji: '🤠', color: 'bg-slate-100 text-slate-700' },
+  { value: 'beef',     label: 'Beef',     emoji: '🥩', color: 'bg-slate-100 text-slate-700' },
+  { value: 'breeding', label: 'Breeding', emoji: '🐃', color: 'bg-slate-100 text-slate-700' },
 ];
 const getCat = (val: string) => CATEGORIES.find(c => c.value === val) ?? CATEGORIES[0];
 
@@ -46,7 +46,7 @@ function ModalShell({ title, onClose, children }: { title: string; onClose: () =
 function EmptyState({ icon: Icon, label }: { icon: any; label: string }) {
   return <div className="col-span-full py-20 text-center bg-white border border-dashed border-slate-200 rounded-3xl"><Icon className="w-10 h-10 text-slate-200 mx-auto mb-3" /><p className="text-slate-400 font-medium text-sm">{label}</p></div>;
 }
-const statusColor = (s: string) => ({ healthy: 'text-emerald-600 bg-emerald-50', injured: 'text-rose-600 bg-rose-50', rented: 'text-amber-600 bg-amber-50', active: 'text-blue-600 bg-blue-50', completed: 'text-slate-500 bg-slate-100' }[s.toLowerCase()] ?? 'text-slate-500 bg-slate-100');
+const statusColor = (s: string) => ({ healthy: 'text-emerald-600 bg-emerald-50', injured: 'text-red-600 bg-red-50', rented: 'text-amber-600 bg-amber-50', active: 'text-slate-600 bg-slate-100', completed: 'text-slate-500 bg-slate-100' }[s.toLowerCase()] ?? 'text-slate-500 bg-slate-100');
 const statusIcon = (s: string) => ({ healthy: <CheckCircle2 className="w-3.5 h-3.5" />, completed: <CheckCircle2 className="w-3.5 h-3.5" />, injured: <AlertCircle className="w-3.5 h-3.5" />, rented: <Clock className="w-3.5 h-3.5" />, active: <Clock className="w-3.5 h-3.5" /> }[s.toLowerCase()] ?? null);
 
 // ── Category selector shared ───────────────────────────────────────────────
