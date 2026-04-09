@@ -68,18 +68,17 @@ export default function CalendarView({ rentals, animals }: Props) {
 
   const selectedRentals = selectedDay ? getRentalsForDay(selectedDay) : [];
 
-  // Stats for this month
-  const monthRevenue = rentals
-    .filter(r => {
-      const start = new Date(r.startDate);
-      return start.getMonth() === currentMonth && start.getFullYear() === currentYear;
-    })
-    .reduce((sum, r) => sum + Number(r.price), 0);
+  // Stats for this month — any rental that overlaps the current month
+  const monthStart = new Date(currentYear, currentMonth, 1);
+  const monthEnd = new Date(currentYear, currentMonth + 1, 0, 23, 59, 59);
 
   const monthRentals = rentals.filter(r => {
-    const start = new Date(r.startDate);
-    return start.getMonth() === currentMonth && start.getFullYear() === currentYear;
+    const start = new Date(r.startDate + 'T00:00:00');
+    const end = new Date(r.endDate + 'T23:59:59');
+    return start <= monthEnd && end >= monthStart;
   });
+
+  const monthRevenue = monthRentals.reduce((sum, r) => sum + Number(r.price), 0);
 
   return (
     <div className="space-y-6">
