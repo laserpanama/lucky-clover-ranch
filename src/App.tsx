@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import {
   Beef,
@@ -73,6 +73,7 @@ function Toast({
   type,
   onClose,
 }: {
+  key?: React.Key;
   message: string;
   type: "success" | "error";
   onClose: () => void;

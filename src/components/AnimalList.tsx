@@ -1,4 +1,4 @@
-﻿'
+
 import { useEffect, useState } from "react";
 import { apiRequest } from "../lib/api";
 import { AnimalStatusBadge } from "./AnimalStatusBadge";
@@ -117,4 +117,4 @@ const styles = {
     textAlign: "center",
   }
 };
-'
+

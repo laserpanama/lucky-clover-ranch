@@ -1,4 +1,4 @@
-﻿'
+
 import { useState } from "react";
 
 type Props = {
@@ -115,4 +115,4 @@ export const AnimalStatusBadge = ({
     </span>
   );
 };
-'
+

@@ -1,6 +1,6 @@
 const API_BASE = "/api";
 
-export async function apiRequest(endpoint: string, options?: RequestInit): Promise<any> {
+export async function apiRequest<T = any>(endpoint: string, options?: RequestInit): Promise<T> {
   const response = await fetch(`${API_BASE}${endpoint}`, {
     headers: {
       "Content-Type": "application/json",
