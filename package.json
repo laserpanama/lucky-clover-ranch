@@ -1,18 +1,20 @@
 {
   "name": "lucky-clover-ranch",
   "private": true,
-  "version": "1.0.0",
+  "version": "0.0.0",
   "type": "module",
   "scripts": {
+    "start": "NODE_ENV=production npx tsx server.ts",
     "dev": "tsx server.ts",
     "frontend": "vite",
-    "build": "prisma generate && vite build",
+    "build": "vite build && prisma generate",
     "preview": "vite preview",
     "clean": "rm -rf dist",
     "lint": "tsc --noEmit",
     "postinstall": "prisma generate"
   },
   "dependencies": {
+    "@google/genai": "^1.29.0",
     "@prisma/client": "^6.4.1",
     "@tailwindcss/vite": "^4.1.14",
     "@vitejs/plugin-react": "^5.0.4",
@@ -34,7 +36,6 @@
     "autoprefixer": "^10.4.21",
     "tailwindcss": "^4.1.14",
     "tsx": "^4.21.0",
-    "typescript": "~5.8.2",
-    "vite": "^6.2.0"
+    "typescript": "~5.8.2"
   }
 }

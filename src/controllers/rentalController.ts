@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import * as rentalService from '../services/rentalService.ts';
+import * as rentalService from '../services/rentalService';
 import { z } from 'zod';
 
 const rentalSchema = z.object({
@@ -12,21 +12,22 @@ const rentalSchema = z.object({
   notes: z.string().optional(),
 });
 
-// All business-logic errors that must surface as 400, not 500
 const BUSINESS_ERRORS = [
   'Start date must be before end date',
   'Cannot create rentals in the past',
+  'Animal is injured and cannot be rented',
+  'Animal is already booked for these dates',
   'Animal not found',
-  'Only rodeo animals can be rented.',
-  'Injured animals cannot be rented.',
-  'Animal is already booked for those dates.',
+  'Only rodeo animals can be rented',
   'Rental not found',
 ];
 
 export const getAllRentals = async (req: Request, res: Response, next: NextFunction) => {
   try {
     res.json(await rentalService.getAllRentals());
-  } catch (error) { next(error); }
+  } catch (error) {
+    next(error);
+  }
 };
 
 export const getRentalById = async (req: Request, res: Response, next: NextFunction) => {
@@ -34,7 +35,9 @@ export const getRentalById = async (req: Request, res: Response, next: NextFunct
     const rental = await rentalService.getRentalById(Number(req.params.id));
     if (!rental) return res.status(404).json({ message: 'Rental not found' });
     res.json(rental);
-  } catch (error) { next(error); }
+  } catch (error) {
+    next(error);
+  }
 };
 
 export const createRental = async (req: Request, res: Response, next: NextFunction) => {
@@ -53,7 +56,8 @@ export const createRental = async (req: Request, res: Response, next: NextFuncti
 export const updateRental = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const data = rentalSchema.partial().parse(req.body);
-    res.json(await rentalService.updateRental(Number(req.params.id), data));
+    const rental = await rentalService.updateRental(Number(req.params.id), data);
+    res.json(rental);
   } catch (error: any) {
     if (BUSINESS_ERRORS.includes(error.message)) {
       return res.status(400).json({ message: error.message });
@@ -66,5 +70,7 @@ export const deleteRental = async (req: Request, res: Response, next: NextFuncti
   try {
     await rentalService.deleteRental(Number(req.params.id));
     res.status(204).send();
-  } catch (error) { next(error); }
+  } catch (error) {
+    next(error);
+  }
 };

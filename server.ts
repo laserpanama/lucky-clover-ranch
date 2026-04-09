@@ -1,26 +1,63 @@
-import express from "express";
-import cors from "cors";
-import animalRoutes from "./src/routes/animalRoutes";
-import clientRoutes from "./src/routes/clientRoutes";
-import rentalRoutes from "./src/routes/rentalRoutes";
+import express, { Request, Response, NextFunction } from 'express';
+import cors from 'cors';
+import bodyParser from 'body-parser';
+import path from 'path';
+import { createServer as createViteServer } from 'vite';
+import animalRoutes from './src/routes/animalRoutes';
+import clientRoutes from './src/routes/clientRoutes';
+import rentalRoutes from './src/routes/rentalRoutes';
+import healthRoutes from './src/routes/healthRoutes';
+import userRoutes from './src/routes/userRoutes';
 
-const app = express();
-const PORT = process.env.PORT ? Number(process.env.PORT) : 3000;
+async function startServer() {
+  const app = express();
+  const PORT = Number(process.env.PORT) || 3000;
 
-app.use(cors());
-app.use(express.json());
+  // Middleware
+  app.use(cors());
+  app.use(bodyParser.json());
 
-app.use("/api/animals", animalRoutes);
-app.use("/api/clients", clientRoutes);
-app.use("/api/rentals", rentalRoutes);
+  // API Routes
+  app.use('/api/animals', animalRoutes);
+  app.use('/api/clients', clientRoutes);
+  app.use('/api/rentals', rentalRoutes);
+  app.use('/api/health', healthRoutes);
+  app.use('/api/users', userRoutes);
 
-app.get("/api/health", (_req, res) => {
-  res.json({ status: "ok", timestamp: new Date().toISOString() });
-});
+  // Health check
+  app.get('/api/health-check', (req, res) => {
+    res.json({ status: 'ok', timestamp: new Date().toISOString() });
+  });
 
-app.listen(PORT, () => {
-  console.log(`✅ Server running on http://localhost:${PORT}`);
-  console.log(`   Animals : http://localhost:${PORT}/api/animals`);
-  console.log(`   Clients : http://localhost:${PORT}/api/clients`);
-  console.log(`   Rentals : http://localhost:${PORT}/api/rentals`);
-});
+  // Error handling middleware
+  app.use((err: any, req: Request, res: Response, next: NextFunction) => {
+    console.error(err.stack || err);
+    res.status(err.status || 500).json({
+      message: err.message || 'Internal Server Error',
+      error: err.message || 'Internal Server Error',
+      details: err.details || null,
+    });
+  });
+
+  // Vite middleware for development
+  if (process.env.NODE_ENV !== 'production') {
+    const vite = await createViteServer({
+      server: { middlewareMode: true },
+      appType: 'spa',
+    });
+    app.use(vite.middlewares);
+  } else {
+    const distPath = path.join(process.cwd(), 'dist');
+    app.use(express.static(distPath));
+
+    app.get('*', (req, res) => {
+      res.sendFile(path.join(distPath, 'index.html'));
+    });
+  }
+
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Server running on http://localhost:${PORT}`);
+  });
+}
+
+startServer().catch(console.error);
