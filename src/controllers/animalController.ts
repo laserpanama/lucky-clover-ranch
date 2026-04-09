@@ -64,7 +64,10 @@ export const deleteAnimal = async (req: Request, res: Response, next: NextFuncti
   try {
     await animalService.animalService.delete(Number(req.params.id));
     res.status(204).send();
-  } catch (error) {
+  } catch (error: any) {
+    if (error.message === 'Cannot delete animal with rental history.') {
+      return res.status(400).json({ message: error.message });
+    }
     next(error);
   }
 };

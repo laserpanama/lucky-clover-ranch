@@ -12,12 +12,15 @@ const rentalSchema = z.object({
   notes: z.string().optional(),
 });
 
+// All business-logic errors that must surface as 400, not 500
 const BUSINESS_ERRORS = [
   'Start date must be before end date',
   'Cannot create rentals in the past',
-  'Animal is injured and cannot be rented',
-  'Animal is already booked for these dates',
   'Animal not found',
+  'Only rodeo animals can be rented.',
+  'Injured animals cannot be rented.',
+  'Animal is already booked for those dates.',
+  'Rental not found',
 ];
 
 export const getAllRentals = async (req: Request, res: Response, next: NextFunction) => {
@@ -29,7 +32,7 @@ export const getAllRentals = async (req: Request, res: Response, next: NextFunct
 export const getRentalById = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const rental = await rentalService.getRentalById(Number(req.params.id));
-    if (!rental) return res.status(404).json({ error: 'Rental not found' });
+    if (!rental) return res.status(404).json({ message: 'Rental not found' });
     res.json(rental);
   } catch (error) { next(error); }
 };
@@ -41,7 +44,7 @@ export const createRental = async (req: Request, res: Response, next: NextFuncti
     res.status(201).json(rental);
   } catch (error: any) {
     if (BUSINESS_ERRORS.includes(error.message)) {
-      return res.status(400).json({ error: error.message });
+      return res.status(400).json({ message: error.message });
     }
     next(error);
   }
@@ -51,7 +54,12 @@ export const updateRental = async (req: Request, res: Response, next: NextFuncti
   try {
     const data = rentalSchema.partial().parse(req.body);
     res.json(await rentalService.updateRental(Number(req.params.id), data));
-  } catch (error) { next(error); }
+  } catch (error: any) {
+    if (BUSINESS_ERRORS.includes(error.message)) {
+      return res.status(400).json({ message: error.message });
+    }
+    next(error);
+  }
 };
 
 export const deleteRental = async (req: Request, res: Response, next: NextFunction) => {

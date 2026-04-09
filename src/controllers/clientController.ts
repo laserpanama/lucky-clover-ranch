@@ -53,7 +53,10 @@ export const deleteClient = async (req: Request, res: Response, next: NextFuncti
   try {
     await clientService.deleteClient(Number(req.params.id));
     res.status(204).send();
-  } catch (error) {
+  } catch (error: any) {
+    if (error.message === 'Cannot delete client with rental history.') {
+      return res.status(400).json({ message: error.message });
+    }
     next(error);
   }
 };

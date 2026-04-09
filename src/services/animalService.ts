@@ -18,6 +18,11 @@ export const animalService = {
   },
 
   delete: async (id: number) => {
+    // Safe delete: reject if any rentals reference this animal
+    const rentalCount = await prisma.rental.count({ where: { animalId: id } });
+    if (rentalCount > 0) {
+      throw new Error('Cannot delete animal with rental history.');
+    }
     return prisma.animal.delete({ where: { id } });
   },
 
@@ -27,8 +32,8 @@ export const animalService = {
         rentals: {
           where: {
             OR: [
-              { status: "active" },
-              { status: "pending" },
+              { status: 'active' },
+              { status: 'upcoming' },
             ],
           },
         },
@@ -38,14 +43,7 @@ export const animalService = {
     const now = new Date();
 
     return animals.map((animal) => {
-      const activeRental = animal.rentals.find(
-        (r) => r.status === "active"
-      );
-
-      const upcomingRental = animal.rentals.find(
-        (r) => r.status === "pending" && new Date(r.startDate) > now
-      );
-
+      const activeRental = animal.rentals.find((r) => r.status === 'active');
       return {
         id: animal.id,
         name: animal.name,
@@ -53,7 +51,7 @@ export const animalService = {
         breed: animal.breed,
         status: animal.status,
         category: animal.category,
-        isAvailable: !activeRental && animal.status !== "injured",
+        isAvailable: !activeRental && animal.status !== 'injured',
       };
     });
   },

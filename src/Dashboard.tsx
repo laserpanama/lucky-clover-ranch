@@ -85,49 +85,55 @@ export default function Dashboard({
   }, []);
 
   const now = new Date();
+  now.setHours(0, 0, 0, 0); // compare at day boundary
+
   const in7Days = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
 
-  const validRentals = rentals.filter(
-    (r) => new Date(r.startDate) <= new Date(r.endDate)
-  );
+  // Helper: parse ISO date string as local date (avoids UTC shift)
+  const localDate = (s: string) => new Date(s.includes('T') ? s : s + 'T00:00:00');
 
-  const totalRevenue = validRentals.reduce(
-    (sum, r) => sum + Number(r.price),
-    0
-  );
+  const validRentals = rentals.filter((r) => localDate(r.startDate) <= localDate(r.endDate));
 
-  const thisMonth = now.getMonth();
+  // Revenue: all time
+  const totalRevenue = validRentals.reduce((sum, r) => sum + Number(r.price), 0);
+
+  // Revenue: this month (overlap-based)
   const thisYear = now.getFullYear();
+  const thisMonth = now.getMonth();
   const monthStart = new Date(thisYear, thisMonth, 1);
   const monthEnd = new Date(thisYear, thisMonth + 1, 0, 23, 59, 59, 999);
 
   const monthRevenue = validRentals
     .filter((r) => {
-      const start = new Date(r.startDate + 'T00:00:00');
-      const end = new Date(r.endDate + 'T23:59:59');
+      const start = localDate(r.startDate);
+      const end = new Date(localDate(r.endDate).setHours(23, 59, 59, 999));
       return start <= monthEnd && end >= monthStart;
     })
     .reduce((sum, r) => sum + Number(r.price), 0);
 
+  // Active: today falls within rental window
   const activeRentals = validRentals.filter((r) => {
-    const start = new Date(r.startDate);
-    const end = new Date(r.endDate);
+    const start = localDate(r.startDate);
+    const end = new Date(localDate(r.endDate).setHours(23, 59, 59, 999));
     return start <= now && end >= now;
   });
 
+  // Upcoming: start is in the future within next 7 days (not active, not completed)
   const upcomingRentals = validRentals.filter((r) => {
-    const start = new Date(r.startDate);
+    const start = localDate(r.startDate);
     return start > now && start <= in7Days;
   });
 
   const rentedAnimalIds = new Set(activeRentals.map((r) => r.animalId));
-  // Availability only counts rodeo animals (the ones that get rented)
+  // Availability only counts rodeo animals
   const rodeoAnimals = animals.filter((a) => (a as any).category === 'rodeo');
   const availableAnimals = rodeoAnimals.filter((a) => !rentedAnimalIds.has(a.id));
-  const avgRentalValue =
-    validRentals.length > 0
-      ? Math.round(totalRevenue / validRentals.length)
-      : 0;
+
+  // Avg value: safe division
+  const avgRentalValue = validRentals.length > 0
+    ? Math.round(totalRevenue / validRentals.length)
+    : 0;
+
 
   if (loading) {
     return (

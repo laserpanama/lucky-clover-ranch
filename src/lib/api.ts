@@ -10,8 +10,9 @@ export async function apiRequest(endpoint: string, options?: RequestInit): Promi
   });
 
   if (!response.ok) {
-    const error = await response.json().catch(() => ({ message: "Request failed" }));
-    throw new Error(error.message || `HTTP ${response.status}`);
+    // Backend may return { message } or { error } — handle both
+    const body = await response.json().catch(() => ({}));
+    throw new Error(body.message || body.error || `Request failed (${response.status})`);
   }
 
   return response.json().catch(() => ({}));
