@@ -10,11 +10,6 @@ interface Animal {
   status: string;
 }
 
-interface Client {
-  id: number;
-  name: string;
-}
-
 interface Rental {
   id: number;
   animalId: number;
@@ -24,10 +19,16 @@ interface Rental {
   status: string;
   price: number;
   animal: Animal;
-  client: Client;
+  client: { id: number; name: string };
 }
 
-function StatCard({ label, value, sub, icon: Icon, delay }: {
+function StatCard({
+  label,
+  value,
+  sub,
+  icon: Icon,
+  delay,
+}: {
   label: string;
   value: string;
   sub?: string;
@@ -39,7 +40,7 @@ function StatCard({ label, value, sub, icon: Icon, delay }: {
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay, duration: 0.2 }}
-      className="bg-white rounded-xl p-5 border border-slate-200 hover:shadow-md hover:-translate-y-0.5 transition-all"
+      className="bg-white rounded-xl p-5 border border-slate-200"
     >
       <div className="flex items-center gap-3 mb-3">
         <div className="w-9 h-9 rounded-lg bg-emerald-600 flex items-center justify-center flex-shrink-0">
@@ -55,17 +56,21 @@ function StatCard({ label, value, sub, icon: Icon, delay }: {
   );
 }
 
-interface DashboardProps {
+export default function Dashboard({
+  animals,
+  rentals,
+  onCreateRental,
+}: {
   animals: Animal[];
   rentals: Rental[];
   onCreateRental?: () => void;
-}
-
-export default function Dashboard({ animals, rentals, onCreateRental }: DashboardProps) {
+}) {
   const now = new Date();
   const in7Days = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
 
-  const validRentals = rentals.filter(r => new Date(r.startDate) <= new Date(r.endDate));
+  const validRentals = rentals.filter(
+    (r) => new Date(r.startDate) <= new Date(r.endDate)
+  );
 
   const totalRevenue = validRentals.reduce((sum, r) => sum + Number(r.price), 0);
 
@@ -73,39 +78,30 @@ export default function Dashboard({ animals, rentals, onCreateRental }: Dashboar
   const thisYear = now.getFullYear();
 
   const monthRevenue = validRentals
-    .filter(r => {
+    .filter((r) => {
       const d = new Date(r.startDate);
       return d.getMonth() === thisMonth && d.getFullYear() === thisYear;
     })
     .reduce((sum, r) => sum + Number(r.price), 0);
 
-  const activeRentals = validRentals.filter(r => {
+  const activeRentals = validRentals.filter((r) => {
     const start = new Date(r.startDate);
     const end = new Date(r.endDate);
     return start <= now && end >= now;
   });
 
-  const upcomingRentals = validRentals.filter(r => {
+  const upcomingRentals = validRentals.filter((r) => {
     const start = new Date(r.startDate);
     return start > now && start <= in7Days;
   });
 
-  const rentedAnimalIds = new Set(activeRentals.map(r => r.animalId));
-  const availableAnimals = animals.filter(a => !rentedAnimalIds.has(a.id));
-  const avgRentalValue = validRentals.length > 0 ? Math.round(totalRevenue / validRentals.length) : 0;
+  const rentedAnimalIds = new Set(activeRentals.map((r) => r.animalId));
+  const availableAnimals = animals.filter((a) => !rentedAnimalIds.has(a.id));
+  const avgRentalValue =
+    validRentals.length > 0 ? Math.round(totalRevenue / validRentals.length) : 0;
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center gap-3">
-        <button
-          onClick={onCreateRental}
-          className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl font-semibold text-sm transition-all"
-        >
-          <Plus className="w-4 h-4" />
-          Create Rental
-        </button>
-      </div>
-
       <div className="grid grid-cols-2 lg:grid-cols-6 gap-4">
         <StatCard label="Revenue (Month)" value={`$${monthRevenue.toLocaleString()}`} icon={DollarSign} delay={0} />
         <StatCard label="Revenue (All Time)" value={`$${totalRevenue.toLocaleString()}`} icon={TrendingUp} delay={0.03} />
@@ -125,7 +121,7 @@ export default function Dashboard({ animals, rentals, onCreateRental }: Dashboar
             {animals.length === 0 && (
               <p className="text-sm text-slate-400 text-center py-6">No animals registered.</p>
             )}
-            {animals.map(animal => {
+            {animals.map((animal) => {
               const isRented = rentedAnimalIds.has(animal.id);
               return (
                 <div key={animal.id} className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-slate-50 transition-colors">
@@ -168,8 +164,13 @@ export default function Dashboard({ animals, rentals, onCreateRental }: Dashboar
                 )}
               </div>
             )}
-            {upcomingRentals.map(rental => {
-              const daysUntil = Math.ceil((new Date(rental.startDate).getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+
+            {upcomingRentals.map((rental) => {
+              const daysUntil = Math.ceil(
+                (new Date(rental.startDate).getTime() - now.getTime()) /
+                  (1000 * 60 * 60 * 24)
+              );
+
               return (
                 <div key={rental.id} className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-slate-50 transition-colors">
                   <div className="flex items-center gap-3">
@@ -177,12 +178,16 @@ export default function Dashboard({ animals, rentals, onCreateRental }: Dashboar
                       <Calendar className="w-4 h-4 text-slate-500" />
                     </div>
                     <div>
-                      <div className="font-medium text-sm text-slate-900">{rental.animal?.name ?? `Animal #${rental.animalId}`}</div>
-                      <div className="text-xs text-slate-500">{rental.client?.name ?? `Client #${rental.clientId}`} · ${Number(rental.price).toLocaleString()}</div>
+                      <div className="font-medium text-sm text-slate-900">
+                        {rental.animal?.name ?? `Animal #${rental.animalId}`}
+                      </div>
+                      <div className="text-xs text-slate-500">
+                        {rental.client?.name ?? `Client #${rental.clientId}`} · ${Number(rental.price).toLocaleString()}
+                      </div>
                     </div>
                   </div>
                   <span className="text-xs font-medium text-slate-600 bg-slate-100 px-2 py-0.5 rounded">
-                    {daysUntil === 1 ? 'Tomorrow' : `${daysUntil}d`}
+                    {daysUntil === 1 ? "Tomorrow" : `${daysUntil}d`}
                   </span>
                 </div>
               );
@@ -211,18 +216,28 @@ export default function Dashboard({ animals, rentals, onCreateRental }: Dashboar
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
-                {activeRentals.map(rental => {
-                  const daysLeft = Math.ceil((new Date(rental.endDate).getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+                {activeRentals.map((rental) => {
+                  const daysLeft = Math.ceil(
+                    (new Date(rental.endDate).getTime() - now.getTime()) /
+                      (1000 * 60 * 60 * 24)
+                  );
+
                   return (
                     <tr key={rental.id} className="hover:bg-slate-50/50 transition-colors">
-                      <td className="px-5 py-3 font-medium text-slate-900 text-sm">{rental.animal?.name ?? `#${rental.animalId}`}</td>
-                      <td className="px-5 py-3 text-sm text-slate-600">{rental.client?.name ?? `#${rental.clientId}`}</td>
+                      <td className="px-5 py-3 font-medium text-slate-900 text-sm">
+                        {rental.animal?.name ?? `#${rental.animalId}`}
+                      </td>
+                      <td className="px-5 py-3 text-sm text-slate-600">
+                        {rental.client?.name ?? `#${rental.clientId}`}
+                      </td>
                       <td className="px-5 py-3 text-sm">
                         <span className={`font-medium ${daysLeft <= 2 ? 'text-red-600' : 'text-slate-600'}`}>
                           {new Date(rental.endDate).toLocaleDateString()} · {daysLeft}d left
                         </span>
                       </td>
-                      <td className="px-5 py-3 text-sm font-semibold text-slate-900 text-right">${Number(rental.price).toLocaleString()}</td>
+                      <td className="px-5 py-3 text-sm font-semibold text-slate-900 text-right">
+                        ${Number(rental.price).toLocaleString()}
+                      </td>
                     </tr>
                   );
                 })}
@@ -233,5 +248,4 @@ export default function Dashboard({ animals, rentals, onCreateRental }: Dashboar
       )}
     </div>
   );
-}
 }
