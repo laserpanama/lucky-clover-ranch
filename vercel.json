@@ -1,8 +1,1 @@
-{
-  "rewrites": [
-    {
-      "source": "/api/(.*)",
-      "destination": "https://lucky-clover-ranch-production.up.railway.app/api/$1"
-    }
-  ]
-}
+{}

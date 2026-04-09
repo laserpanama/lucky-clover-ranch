@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useRentalFormData } from "../hooks/useRentalFormData";
-
-const API_URL = "http://localhost:3000/api";
+import { apiRequest } from "../lib/api";
 
 export const RentalForm = () => {
   const [form, setForm] = useState({
@@ -32,17 +31,10 @@ export const RentalForm = () => {
     };
 
     try {
-      const res = await fetch(`${API_URL}/rentals`, {
+      await apiRequest("/rentals", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.error || "Failed to create rental");
-      }
 
       alert("✅ Rental created successfully!");
 
