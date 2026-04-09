@@ -1,18 +1,23 @@
 const API_BASE = "/api";
 
-export async function apiRequest(endpoint: string, options?: RequestInit): Promise<any> {
+export async function apiRequest<T = any>(
+  endpoint: string,
+  options?: RequestInit
+): Promise<T> {
   const response = await fetch(`${API_BASE}${endpoint}`, {
     headers: {
       "Content-Type": "application/json",
-      ...options?.headers,
+      ...(options?.headers || {}),
     },
     ...options,
   });
 
   if (!response.ok) {
-    const error = await response.json().catch(() => ({ message: "Request failed" }));
+    const error = await response
+      .json()
+      .catch(() => ({ message: "Request failed" }));
     throw new Error(error.message || `HTTP ${response.status}`);
   }
 
-  return response.json().catch(() => ({}));
+  return response.json().catch(() => ({} as T));
 }
