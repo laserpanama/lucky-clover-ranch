@@ -277,7 +277,7 @@ function AddAnimalModal({
       await apiRequest("/animals", { method: "POST", body: JSON.stringify(form) });
       onSuccess();
     } catch (e: any) {
-      setError(e.message);
+      setError(e?.message || "Unexpected error");
     } finally {
       setLoading(false);
     }
@@ -338,7 +338,7 @@ function EditAnimalModal({
     breed: animal.breed,
     status: animal.status,
     category: animal.category ?? "rodeo",
-    dateOfBirth: animal.dateOfBirth.split("T")[0],
+    dateOfBirth: animal.dateOfBirth?.split("T")[0] || "",
     notes: animal.notes ?? "",
   });
   const [loading, setLoading] = useState(false);
@@ -355,7 +355,7 @@ function EditAnimalModal({
       await apiRequest(`/animals/${animal.id}`, { method: "PUT", body: JSON.stringify(form) });
       onSuccess();
     } catch (e: any) {
-      setError(e.message);
+      setError(e?.message || "Unexpected error");
     } finally {
       setLoading(false);
     }
@@ -419,7 +419,7 @@ function DeleteAnimalModal({
       await apiRequest(`/animals/${animal.id}`, { method: "DELETE" });
       onSuccess();
     } catch (e: any) {
-      setError(e.message);
+      setError(e?.message || "Unexpected error");
     } finally {
       setLoading(false);
     }
@@ -475,7 +475,7 @@ function AddClientModal({
       await apiRequest("/clients", { method: "POST", body: JSON.stringify(form) });
       onSuccess();
     } catch (e: any) {
-      setError(e.message);
+      setError(e?.message || "Unexpected error");
     } finally {
       setLoading(false);
     }
@@ -545,7 +545,7 @@ function AddRentalModal({
       });
       onSuccess();
     } catch (e: any) {
-      setError(e.message);
+      setError(e?.message || "Unexpected error");
     } finally {
       setLoading(false);
     }
@@ -641,7 +641,7 @@ export default function App() {
     .filter((a) => categoryFilter === "all" || a.category === categoryFilter)
     .filter((a) => a.name.toLowerCase().includes(search.toLowerCase()) || a.tagNumber.toLowerCase().includes(search.toLowerCase()));
   const filteredClients = clients.filter((c) => c.name.toLowerCase().includes(search.toLowerCase()) || c.email.toLowerCase().includes(search.toLowerCase()));
-  const filteredRentals = rentals.filter((r) => r.animal?.name?.toLowerCase().includes(search.toLowerCase()) || r.client?.name?.toLowerCase().includes(search.toLowerCase()));
+  const filteredRentals = rentals.filter((r) => (r.animal?.name || "").toLowerCase().includes(search.toLowerCase()) || (r.client?.name || "").toLowerCase().includes(search.toLowerCase()));
 
   const navItems = [
     { id: "dashboard" as Tab, label: "Dashboard", icon: LayoutDashboard },
@@ -733,7 +733,7 @@ export default function App() {
                 className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-xl font-bold transition-all text-sm"
               >
                 <Plus className="w-4 h-4" />
-                Add {activeTab.slice(0, -1)}
+                Add {{ animals: "Animal", clients: "Client", rentals: "Rental" }[activeTab] ?? activeTab}
               </button>
             </div>
           )}
