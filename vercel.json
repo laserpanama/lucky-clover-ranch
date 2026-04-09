@@ -1,6 +1,8 @@
 {
-  "outputDirectory": "dist",
   "rewrites": [
-    { "source": "/api/(.*)", "destination": "https://victorious-abundance-production-cc5f.up.railway.app/api/$1" }
+    {
+      "source": "/api/:path*",
+      "destination": "https://YOUR_RAILWAY_URL/api/:path*"
+    }
   ]
 }
