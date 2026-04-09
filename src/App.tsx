@@ -594,6 +594,142 @@ function AddRentalModal({
   );
 }
 
+function EditClientModal({ client, onClose, onSuccess }: { client: Client; onClose: () => void; onSuccess: () => void }) {
+  const [form, setForm] = useState({ name: client.name, phone: client.phone, email: client.email, organization: client.organization ?? "" });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const submit = async () => {
+    if (!form.name || !form.phone || !form.email) { setError("Name, phone and email required."); return; }
+    setLoading(true); setError("");
+    try { await apiRequest(`/clients/${client.id}`, { method: "PUT", body: JSON.stringify(form) }); onSuccess(); }
+    catch (e: any) { setError(e?.message || "Unexpected error"); }
+    finally { setLoading(false); }
+  };
+  return (
+    <ModalShell title={`Edit — ${client.name}`} onClose={onClose}>
+      <div className="space-y-4">
+        <Field label="Full Name" icon={Users}><input className={inputCls} value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} /></Field>
+        <div className="grid grid-cols-2 gap-4">
+          <Field label="Phone" icon={Phone}><input className={inputCls} value={form.phone} onChange={e => setForm(p => ({ ...p, phone: e.target.value }))} /></Field>
+          <Field label="Email" icon={Mail}><input className={inputCls} value={form.email} onChange={e => setForm(p => ({ ...p, email: e.target.value }))} /></Field>
+        </div>
+        <Field label="Organization" icon={Building2}><input className={inputCls} value={form.organization} onChange={e => setForm(p => ({ ...p, organization: e.target.value }))} /></Field>
+        {error && <p className="text-rose-500 text-sm bg-rose-50 px-4 py-2.5 rounded-xl">{error}</p>}
+        <ModalActions onClose={onClose} onSubmit={submit} loading={loading} label="Save Changes" />
+      </div>
+    </ModalShell>
+  );
+}
+
+function DeleteClientModal({ client, onClose, onSuccess }: { client: Client; onClose: () => void; onSuccess: () => void }) {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const confirm = async () => {
+    setLoading(true);
+    try { await apiRequest(`/clients/${client.id}`, { method: "DELETE" }); onSuccess(); }
+    catch (e: any) { setError(e?.message || "Unexpected error"); }
+    finally { setLoading(false); }
+  };
+  return (
+    <ModalShell title="Delete Client" onClose={onClose}>
+      <div className="space-y-6">
+        <div className="flex items-center gap-4 p-4 bg-rose-50 rounded-2xl border border-rose-100">
+          <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm"><Users className="w-5 h-5 text-rose-500" /></div>
+          <div><div className="font-bold text-slate-900">{client.name}</div><div className="text-sm text-slate-500">{client.email}</div></div>
+        </div>
+        <p className="text-slate-600 text-sm">Permanently delete <strong>{client.name}</strong>? Their rentals will remain but will no longer reference a client.</p>
+        {error && <p className="text-rose-500 text-sm bg-rose-50 px-4 py-2.5 rounded-xl">{error}</p>}
+        <div className="flex gap-3">
+          <button onClick={onClose} className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 rounded-xl font-bold text-slate-700">Cancel</button>
+          <button onClick={confirm} disabled={loading} className="flex-1 py-3 bg-rose-600 hover:bg-rose-700 disabled:opacity-60 text-white rounded-xl font-bold flex items-center justify-center gap-2">
+            {loading && <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />}
+            {loading ? "Deleting..." : "Delete"}
+          </button>
+        </div>
+      </div>
+    </ModalShell>
+  );
+}
+
+function EditRentalModal({ rental, animals, clients, onClose, onSuccess }: { rental: Rental; animals: Animal[]; clients: Client[]; onClose: () => void; onSuccess: () => void }) {
+  const [form, setForm] = useState({
+    animalId: String(rental.animalId),
+    clientId: String(rental.clientId),
+    startDate: rental.startDate?.split("T")[0] || "",
+    endDate: rental.endDate?.split("T")[0] || "",
+    price: String(rental.price),
+  });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const rodeoAnimals = animals.filter(a => a.category === "rodeo");
+  const submit = async () => {
+    if (!form.startDate || !form.endDate || !form.price) { setError("All fields required."); return; }
+    if (new Date(form.startDate) > new Date(form.endDate)) { setError("Start date cannot be after end date."); return; }
+    setLoading(true); setError("");
+    try {
+      await apiRequest(`/rentals/${rental.id}`, { method: "PUT", body: JSON.stringify({ animalId: Number(form.animalId), clientId: Number(form.clientId), startDate: form.startDate, endDate: form.endDate, price: Number(form.price) }) });
+      onSuccess();
+    } catch (e: any) { setError(e?.message || "Unexpected error"); }
+    finally { setLoading(false); }
+  };
+  return (
+    <ModalShell title="Edit Rental" onClose={onClose}>
+      <div className="space-y-4">
+        <Field label="Animal (Rodeo only)" icon={Beef}>
+          <select className={inputCls} value={form.animalId} onChange={e => setForm(p => ({ ...p, animalId: e.target.value }))}>
+            {rodeoAnimals.map(a => <option key={a.id} value={a.id}>🤠 {a.name} — {a.tagNumber}</option>)}
+          </select>
+        </Field>
+        <Field label="Client" icon={Users}>
+          <select className={inputCls} value={form.clientId} onChange={e => setForm(p => ({ ...p, clientId: e.target.value }))}>
+            {clients.map(c => <option key={c.id} value={c.id}>{c.name}{c.organization ? ` (${c.organization})` : ""}</option>)}
+          </select>
+        </Field>
+        <div className="grid grid-cols-2 gap-4">
+          <Field label="Start Date"><input type="date" className={inputCls} value={form.startDate} onChange={e => setForm(p => ({ ...p, startDate: e.target.value }))} /></Field>
+          <Field label="End Date"><input type="date" className={inputCls} value={form.endDate} onChange={e => setForm(p => ({ ...p, endDate: e.target.value }))} /></Field>
+        </div>
+        <Field label="Price (USD)" icon={DollarSign}><input type="number" className={inputCls} value={form.price} onChange={e => setForm(p => ({ ...p, price: e.target.value }))} /></Field>
+        {error && <div className="flex items-start gap-3 bg-rose-50 border border-rose-200 px-4 py-3 rounded-xl"><AlertCircle className="w-5 h-5 text-rose-500 shrink-0 mt-0.5" /><p className="text-rose-600 text-sm font-semibold">{error}</p></div>}
+        <ModalActions onClose={onClose} onSubmit={submit} loading={loading} label="Save Changes" />
+      </div>
+    </ModalShell>
+  );
+}
+
+function DeleteRentalModal({ rental, onClose, onSuccess }: { rental: Rental; onClose: () => void; onSuccess: () => void }) {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const confirm = async () => {
+    setLoading(true);
+    try { await apiRequest(`/rentals/${rental.id}`, { method: "DELETE" }); onSuccess(); }
+    catch (e: any) { setError(e?.message || "Unexpected error"); }
+    finally { setLoading(false); }
+  };
+  return (
+    <ModalShell title="Delete Rental" onClose={onClose}>
+      <div className="space-y-6">
+        <div className="flex items-center gap-4 p-4 bg-rose-50 rounded-2xl border border-rose-100">
+          <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center text-2xl shadow-sm">{getCat(rental.animal?.category ?? "rodeo").emoji}</div>
+          <div>
+            <div className="font-bold text-slate-900">{rental.animal?.name ?? `#${rental.animalId}`} → {rental.client?.name ?? `#${rental.clientId}`}</div>
+            <div className="text-sm text-slate-500">{new Date(rental.startDate).toLocaleDateString()} – {new Date(rental.endDate).toLocaleDateString()} · ${Number(rental.price).toLocaleString()}</div>
+          </div>
+        </div>
+        <p className="text-slate-600 text-sm">Permanently delete this rental contract? This cannot be undone.</p>
+        {error && <p className="text-rose-500 text-sm bg-rose-50 px-4 py-2.5 rounded-xl">{error}</p>}
+        <div className="flex gap-3">
+          <button onClick={onClose} className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 rounded-xl font-bold text-slate-700">Cancel</button>
+          <button onClick={confirm} disabled={loading} className="flex-1 py-3 bg-rose-600 hover:bg-rose-700 disabled:opacity-60 text-white rounded-xl font-bold flex items-center justify-center gap-2">
+            {loading && <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />}
+            {loading ? "Deleting..." : "Delete"}
+          </button>
+        </div>
+      </div>
+    </ModalShell>
+  );
+}
+
 export default function App() {
   const [activeTab, setActiveTab] = useState<Tab>("dashboard");
   const [animals, setAnimals] = useState<Animal[]>([]);
@@ -606,6 +742,10 @@ export default function App() {
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [editAnimal, setEditAnimal] = useState<Animal | null>(null);
   const [deleteAnimal, setDeleteAnimal] = useState<Animal | null>(null);
+  const [editClient, setEditClient] = useState<Client | null>(null);
+  const [deleteClient, setDeleteClient] = useState<Client | null>(null);
+  const [editRental, setEditRental] = useState<Rental | null>(null);
+  const [deleteRental, setDeleteRental] = useState<Rental | null>(null);
 
   useEffect(() => { fetchAll(); }, []);
 
@@ -631,6 +771,10 @@ export default function App() {
     setShowModal(false);
     setEditAnimal(null);
     setDeleteAnimal(null);
+    setEditClient(null);
+    setDeleteClient(null);
+    setEditRental(null);
+    setDeleteRental(null);
     setToast({ message: msg, type: "success" });
     fetchAll();
   };
@@ -810,11 +954,12 @@ export default function App() {
                         <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Name</th>
                         <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Contact</th>
                         <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Organization</th>
+                        <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider text-right">Actions</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
                       {filteredClients.map((client) => (
-                        <tr key={client.id} className="hover:bg-slate-50/60">
+                        <tr key={client.id} className="hover:bg-slate-50/60 group">
                           <td className="px-6 py-4 font-bold text-slate-800">{client.name}</td>
                           <td className="px-6 py-4">
                             <div className="text-sm text-slate-600">{client.email}</div>
@@ -822,6 +967,12 @@ export default function App() {
                           </td>
                           <td className="px-6 py-4">
                             <span className="px-3 py-1 bg-slate-100 text-slate-500 rounded-lg text-xs font-semibold">{client.organization || "Individual"}</span>
+                          </td>
+                          <td className="px-6 py-4 text-right">
+                            <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <button onClick={() => setEditClient(client)} className="p-1.5 bg-slate-100 hover:bg-blue-100 hover:text-blue-600 rounded-lg transition-colors"><Pencil className="w-3.5 h-3.5" /></button>
+                              <button onClick={() => setDeleteClient(client)} className="p-1.5 bg-slate-100 hover:bg-rose-100 hover:text-rose-600 rounded-lg transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
+                            </div>
                           </td>
                         </tr>
                       ))}
@@ -834,7 +985,7 @@ export default function App() {
               {activeTab === "rentals" && (
                 <div className="space-y-3">
                   {filteredRentals.map((rental) => (
-                    <motion.div key={rental.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-white border border-slate-200 rounded-2xl p-5 flex items-center justify-between hover:border-emerald-200 hover:shadow-sm transition-all">
+                    <motion.div key={rental.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-white border border-slate-200 rounded-2xl p-5 flex items-center justify-between hover:border-emerald-200 hover:shadow-sm transition-all group">
                       <div className="flex items-center gap-5">
                         <div className="w-12 h-12 bg-slate-50 rounded-xl flex items-center justify-center text-2xl">{getCat(rental.animal?.category ?? "rodeo").emoji}</div>
                         <div>
@@ -849,9 +1000,15 @@ export default function App() {
                           </div>
                         </div>
                       </div>
-                      <span className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold uppercase ${statusColor(rental.status)}`}>
-                        {statusIcon(rental.status)}{rental.status}
-                      </span>
+                      <div className="flex items-center gap-3">
+                        <span className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold uppercase ${statusColor(rental.status)}`}>
+                          {statusIcon(rental.status)}{rental.status}
+                        </span>
+                        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button onClick={() => setEditRental(rental)} className="p-1.5 bg-slate-100 hover:bg-blue-100 hover:text-blue-600 rounded-lg transition-colors"><Pencil className="w-3.5 h-3.5" /></button>
+                          <button onClick={() => setDeleteRental(rental)} className="p-1.5 bg-slate-100 hover:bg-rose-100 hover:text-rose-600 rounded-lg transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
+                        </div>
+                      </div>
                     </motion.div>
                   ))}
                   {filteredRentals.length === 0 && <EmptyState icon={Calendar} label="No rentals found" />}
@@ -869,6 +1026,10 @@ export default function App() {
         {showModal && activeTab === "rentals" && <AddRentalModal animals={animals} clients={clients} onClose={() => setShowModal(false)} onSuccess={() => handleSuccess("Rental created!")} />}
         {editAnimal && <EditAnimalModal animal={editAnimal} onClose={() => setEditAnimal(null)} onSuccess={() => handleSuccess("Animal updated!")} />}
         {deleteAnimal && <DeleteAnimalModal animal={deleteAnimal} onClose={() => setDeleteAnimal(null)} onSuccess={() => handleSuccess("Animal deleted.")} />}
+        {editClient && <EditClientModal client={editClient} onClose={() => setEditClient(null)} onSuccess={() => handleSuccess("Client updated!")} />}
+        {deleteClient && <DeleteClientModal client={deleteClient} onClose={() => setDeleteClient(null)} onSuccess={() => handleSuccess("Client deleted.")} />}
+        {editRental && <EditRentalModal rental={editRental} animals={animals} clients={clients} onClose={() => setEditRental(null)} onSuccess={() => handleSuccess("Rental updated!")} />}
+        {deleteRental && <DeleteRentalModal rental={deleteRental} onClose={() => setDeleteRental(null)} onSuccess={() => handleSuccess("Rental deleted.")} />}
       </AnimatePresence>
 
       <AnimatePresence>

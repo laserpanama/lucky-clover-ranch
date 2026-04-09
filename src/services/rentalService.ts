@@ -54,5 +54,21 @@ export const createRental = async (data: any) => {
 };
 
 export const updateRental = async (id: number, data: any) => {
+  // Recalculate status if dates change
+  if (data.startDate || data.endDate) {
+    const existing = await prisma.rental.findUnique({ where: { id } });
+    const start = data.startDate ?? existing?.startDate;
+    const end = data.endDate ?? existing?.endDate;
+    const now = new Date();
+    if (start && end) {
+      if (now >= start && now <= end) data.status = 'active';
+      else if (now > end) data.status = 'completed';
+      else data.status = 'pending';
+    }
+  }
   return prisma.rental.update({ where: { id }, data });
+};
+
+export const deleteRental = async (id: number) => {
+  return prisma.rental.delete({ where: { id } });
 };

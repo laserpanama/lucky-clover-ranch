@@ -53,3 +53,10 @@ export const updateRental = async (req: Request, res: Response, next: NextFuncti
     res.json(await rentalService.updateRental(Number(req.params.id), data));
   } catch (error) { next(error); }
 };
+
+export const deleteRental = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    await rentalService.deleteRental(Number(req.params.id));
+    res.status(204).send();
+  } catch (error) { next(error); }
+};

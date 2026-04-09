@@ -98,11 +98,14 @@ export default function Dashboard({
 
   const thisMonth = now.getMonth();
   const thisYear = now.getFullYear();
+  const monthStart = new Date(thisYear, thisMonth, 1);
+  const monthEnd = new Date(thisYear, thisMonth + 1, 0, 23, 59, 59, 999);
 
   const monthRevenue = validRentals
     .filter((r) => {
-      const d = new Date(r.startDate);
-      return d.getMonth() === thisMonth && d.getFullYear() === thisYear;
+      const start = new Date(r.startDate + 'T00:00:00');
+      const end = new Date(r.endDate + 'T23:59:59');
+      return start <= monthEnd && end >= monthStart;
     })
     .reduce((sum, r) => sum + Number(r.price), 0);
 
@@ -118,7 +121,9 @@ export default function Dashboard({
   });
 
   const rentedAnimalIds = new Set(activeRentals.map((r) => r.animalId));
-  const availableAnimals = animals.filter((a) => !rentedAnimalIds.has(a.id));
+  // Availability only counts rodeo animals (the ones that get rented)
+  const rodeoAnimals = animals.filter((a) => (a as any).category === 'rodeo');
+  const availableAnimals = rodeoAnimals.filter((a) => !rentedAnimalIds.has(a.id));
   const avgRentalValue =
     validRentals.length > 0
       ? Math.round(totalRevenue / validRentals.length)
@@ -156,8 +161,8 @@ export default function Dashboard({
         />
         <StatCard
           label="Available"
-          value={`${availableAnimals.length}/${animals.length}`}
-          sub="animals"
+          value={`${availableAnimals.length}/${rodeoAnimals.length}`}
+          sub="rodeo animals"
           icon={Beef}
           delay={0.09}
         />
@@ -189,7 +194,7 @@ export default function Dashboard({
                 No animals registered.
               </p>
             )}
-            {animals.map((animal) => {
+            {rodeoAnimals.map((animal) => {
               const isRented = rentedAnimalIds.has(animal.id);
               return (
                 <div
