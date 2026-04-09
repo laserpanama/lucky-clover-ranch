@@ -1,28 +1,45 @@
-import { useEffect, useState } from "react";
 import { motion } from "motion/react";
 import {
-  DollarSign, Activity, TrendingUp, Beef, Calendar, AlertTriangle, Plus
+  DollarSign, Activity, TrendingUp, Beef, Calendar, Plus
 } from "lucide-react";
 
-const API = '/api';
-
-interface Animal { id: number; name: string; tagNumber: string; status: string; }
-interface Rental {
-  id: number; animalId: number; clientId: number;
-  startDate: string; endDate: string; status: string; price: number;
-  animal: Animal; client: { id: number; name: string; };
+interface Animal {
+  id: number;
+  name: string;
+  tagNumber: string;
+  status: string;
 }
 
-// UNIFIED KPI CARD - same style for ALL metrics
+interface Client {
+  id: number;
+  name: string;
+}
+
+interface Rental {
+  id: number;
+  animalId: number;
+  clientId: number;
+  startDate: string;
+  endDate: string;
+  status: string;
+  price: number;
+  animal: Animal;
+  client: Client;
+}
+
 function StatCard({ label, value, sub, icon: Icon, delay }: {
-  label: string; value: string; sub?: string; icon: any; delay: number;
+  label: string;
+  value: string;
+  sub?: string;
+  icon: any;
+  delay: number;
 }) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay, duration: 0.2 }}
-      className="bg-white rounded-xl p-5 border border-slate-200"
+      className="bg-white rounded-xl p-5 border border-slate-200 hover:shadow-md hover:-translate-y-0.5 transition-all"
     >
       <div className="flex items-center gap-3 mb-3">
         <div className="w-9 h-9 rounded-lg bg-emerald-600 flex items-center justify-center flex-shrink-0">
@@ -38,31 +55,23 @@ function StatCard({ label, value, sub, icon: Icon, delay }: {
   );
 }
 
-export default function Dashboard({ onCreateRental }: { onCreateRental?: () => void }) {
-  const [rentals, setRentals] = useState<Rental[]>([]);
-  const [animals, setAnimals] = useState<Animal[]>([]);
-  const [loading, setLoading] = useState(true);
+interface DashboardProps {
+  animals: Animal[];
+  rentals: Rental[];
+  onCreateRental?: () => void;
+}
 
-  useEffect(() => {
-    Promise.all([
-      fetch(`${API}/rentals`).then(r => r.json()),
-      fetch(`${API}/animals`).then(r => r.json()),
-    ]).then(([r, a]) => {
-      setRentals(Array.isArray(r) ? r : []);
-      setAnimals(Array.isArray(a) ? a : []);
-    }).finally(() => setLoading(false));
-  }, []);
-
+export default function Dashboard({ animals, rentals, onCreateRental }: DashboardProps) {
   const now = new Date();
   const in7Days = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
 
-  // Validate: filter out rentals with illogical date ranges
   const validRentals = rentals.filter(r => new Date(r.startDate) <= new Date(r.endDate));
 
-  // Metrics
   const totalRevenue = validRentals.reduce((sum, r) => sum + Number(r.price), 0);
+
   const thisMonth = now.getMonth();
   const thisYear = now.getFullYear();
+
   const monthRevenue = validRentals
     .filter(r => {
       const d = new Date(r.startDate);
@@ -85,18 +94,18 @@ export default function Dashboard({ onCreateRental }: { onCreateRental?: () => v
   const availableAnimals = animals.filter(a => !rentedAnimalIds.has(a.id));
   const avgRentalValue = validRentals.length > 0 ? Math.round(totalRevenue / validRentals.length) : 0;
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="w-8 h-8 border-[3px] border-emerald-600 border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-6">
+      <div className="flex flex-wrap items-center gap-3">
+        <button
+          onClick={onCreateRental}
+          className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl font-semibold text-sm transition-all"
+        >
+          <Plus className="w-4 h-4" />
+          Create Rental
+        </button>
+      </div>
 
-      {/* KPI Cards - unified emerald style */}
       <div className="grid grid-cols-2 lg:grid-cols-6 gap-4">
         <StatCard label="Revenue (Month)" value={`$${monthRevenue.toLocaleString()}`} icon={DollarSign} delay={0} />
         <StatCard label="Revenue (All Time)" value={`$${totalRevenue.toLocaleString()}`} icon={TrendingUp} delay={0.03} />
@@ -106,10 +115,7 @@ export default function Dashboard({ onCreateRental }: { onCreateRental?: () => v
         <StatCard label="Avg Value" value={`$${avgRentalValue.toLocaleString()}`} sub="per contract" icon={DollarSign} delay={0.15} />
       </div>
 
-      {/* Two columns */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-
-        {/* Availability */}
         <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
           <div className="px-5 py-3 border-b border-slate-100 flex items-center justify-between">
             <h3 className="font-semibold text-slate-900">Animal Availability</h3>
@@ -141,7 +147,6 @@ export default function Dashboard({ onCreateRental }: { onCreateRental?: () => v
           </div>
         </div>
 
-        {/* Upcoming Rentals */}
         <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
           <div className="px-5 py-3 border-b border-slate-100 flex items-center justify-between">
             <h3 className="font-semibold text-slate-900">Upcoming Rentals</h3>
@@ -186,7 +191,6 @@ export default function Dashboard({ onCreateRental }: { onCreateRental?: () => v
         </div>
       </div>
 
-      {/* Active Contracts Table */}
       {activeRentals.length > 0 && (
         <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
           <div className="px-5 py-3 border-b border-slate-100 flex items-center justify-between">
@@ -229,4 +233,5 @@ export default function Dashboard({ onCreateRental }: { onCreateRental?: () => v
       )}
     </div>
   );
+}
 }
