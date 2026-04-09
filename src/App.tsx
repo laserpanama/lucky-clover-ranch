@@ -3,21 +3,22 @@ import { motion, AnimatePresence } from 'motion/react';
 import {
   Beef, Users, Calendar, Plus, Stethoscope, Tag, CheckCircle2,
   AlertCircle, Clock, Search, X, DollarSign,
-  Phone, Mail, Building2, Hash, LayoutDashboard, Pencil, Trash2
+  Phone, Mail, Building2, Hash, LayoutDashboard, Pencil, Trash2, ClipboardList
 } from 'lucide-react';
 import Dashboard from './Dashboard';
+import CalendarView from './CalendarView_2';
 
-const API = '/api';
+const API = 'http://localhost:3000/api';
 
 interface Animal { id: number; tagNumber: string; name: string; breed: string; status: string; dateOfBirth: string; notes?: string; category: string; }
 interface Client { id: number; name: string; phone: string; email: string; organization?: string; }
 interface Rental { id: number; animalId: number; clientId: number; startDate: string; endDate: string; status: string; price: number; animal: Animal; client: Client; }
-type Tab = 'dashboard' | 'animals' | 'clients' | 'rentals';
+type Tab = 'dashboard' | 'animals' | 'clients' | 'rentals' | 'calendar';
 
 const CATEGORIES = [
-  { value: 'rodeo',    label: 'Rodeo',    emoji: '🤠', color: 'bg-slate-100 text-slate-700' },
-  { value: 'beef',     label: 'Beef',     emoji: '🥩', color: 'bg-slate-100 text-slate-700' },
-  { value: 'breeding', label: 'Breeding', emoji: '🐃', color: 'bg-slate-100 text-slate-700' },
+  { value: 'rodeo',    label: 'Rodeo',    emoji: '🤠', color: 'bg-amber-50 text-amber-700' },
+  { value: 'beef',     label: 'Beef',     emoji: '🥩', color: 'bg-rose-50 text-rose-700' },
+  { value: 'breeding', label: 'Breeding', emoji: '🐃', color: 'bg-violet-50 text-violet-700' },
 ];
 const getCat = (val: string) => CATEGORIES.find(c => c.value === val) ?? CATEGORIES[0];
 
@@ -46,10 +47,9 @@ function ModalShell({ title, onClose, children }: { title: string; onClose: () =
 function EmptyState({ icon: Icon, label }: { icon: any; label: string }) {
   return <div className="col-span-full py-20 text-center bg-white border border-dashed border-slate-200 rounded-3xl"><Icon className="w-10 h-10 text-slate-200 mx-auto mb-3" /><p className="text-slate-400 font-medium text-sm">{label}</p></div>;
 }
-const statusColor = (s: string) => ({ healthy: 'text-emerald-600 bg-emerald-50', injured: 'text-red-600 bg-red-50', rented: 'text-amber-600 bg-amber-50', active: 'text-slate-600 bg-slate-100', completed: 'text-slate-500 bg-slate-100' }[s.toLowerCase()] ?? 'text-slate-500 bg-slate-100');
+const statusColor = (s: string) => ({ healthy: 'text-emerald-600 bg-emerald-50', injured: 'text-rose-600 bg-rose-50', rented: 'text-amber-600 bg-amber-50', active: 'text-blue-600 bg-blue-50', completed: 'text-slate-500 bg-slate-100' }[s.toLowerCase()] ?? 'text-slate-500 bg-slate-100');
 const statusIcon = (s: string) => ({ healthy: <CheckCircle2 className="w-3.5 h-3.5" />, completed: <CheckCircle2 className="w-3.5 h-3.5" />, injured: <AlertCircle className="w-3.5 h-3.5" />, rented: <Clock className="w-3.5 h-3.5" />, active: <Clock className="w-3.5 h-3.5" /> }[s.toLowerCase()] ?? null);
 
-// ── Category selector shared ───────────────────────────────────────────────
 function CategorySelector({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   return (
     <div className="grid grid-cols-3 gap-2">
@@ -63,7 +63,6 @@ function CategorySelector({ value, onChange }: { value: string; onChange: (v: st
   );
 }
 
-// ── Add Animal ─────────────────────────────────────────────────────────────
 function AddAnimalModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: () => void }) {
   const [form, setForm] = useState({ name: '', tagNumber: '', breed: '', status: 'active', category: 'rodeo', dateOfBirth: '', notes: '' });
   const [loading, setLoading] = useState(false);
@@ -99,7 +98,6 @@ function AddAnimalModal({ onClose, onSuccess }: { onClose: () => void; onSuccess
   );
 }
 
-// ── Edit Animal ────────────────────────────────────────────────────────────
 function EditAnimalModal({ animal, onClose, onSuccess }: { animal: Animal; onClose: () => void; onSuccess: () => void }) {
   const [form, setForm] = useState({
     name: animal.name, tagNumber: animal.tagNumber, breed: animal.breed,
@@ -112,7 +110,7 @@ function EditAnimalModal({ animal, onClose, onSuccess }: { animal: Animal; onClo
     if (!form.name || !form.tagNumber || !form.breed || !form.dateOfBirth) { setError('All fields required.'); return; }
     setLoading(true); setError('');
     try {
-      const res = await fetch(`${API}/animals/${animal.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form) });
+      const res = await fetch(`${API}/animals/${animal.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form) });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed');
       onSuccess();
@@ -139,7 +137,6 @@ function EditAnimalModal({ animal, onClose, onSuccess }: { animal: Animal; onClo
   );
 }
 
-// ── Delete Animal ──────────────────────────────────────────────────────────
 function DeleteAnimalModal({ animal, onClose, onSuccess }: { animal: Animal; onClose: () => void; onSuccess: () => void }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -172,7 +169,6 @@ function DeleteAnimalModal({ animal, onClose, onSuccess }: { animal: Animal; onC
   );
 }
 
-// ── Add Client ─────────────────────────────────────────────────────────────
 function AddClientModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: () => void }) {
   const [form, setForm] = useState({ name: '', phone: '', email: '', organization: '' });
   const [loading, setLoading] = useState(false);
@@ -190,7 +186,6 @@ function AddClientModal({ onClose, onSuccess }: { onClose: () => void; onSuccess
   return <ModalShell title="Add Client" onClose={onClose}><div className="space-y-4"><Field label="Full Name" icon={Users}><input className={inputCls} value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} placeholder="John Doe" /></Field><div className="grid grid-cols-2 gap-4"><Field label="Phone" icon={Phone}><input className={inputCls} value={form.phone} onChange={e => setForm(p => ({ ...p, phone: e.target.value }))} placeholder="+507 000 0000" /></Field><Field label="Email" icon={Mail}><input className={inputCls} value={form.email} onChange={e => setForm(p => ({ ...p, email: e.target.value }))} placeholder="john@ranch.com" /></Field></div><Field label="Organization (optional)" icon={Building2}><input className={inputCls} value={form.organization} onChange={e => setForm(p => ({ ...p, organization: e.target.value }))} placeholder="Texas Rodeo LLC" /></Field>{error && <p className="text-rose-500 text-sm bg-rose-50 px-4 py-2.5 rounded-xl">{error}</p>}<ModalActions onClose={onClose} onSubmit={submit} loading={loading} label="Create Client" /></div></ModalShell>;
 }
 
-// ── Add Rental ─────────────────────────────────────────────────────────────
 function AddRentalModal({ animals, clients, onClose, onSuccess }: { animals: Animal[]; clients: Client[]; onClose: () => void; onSuccess: () => void }) {
   const [form, setForm] = useState({ animalId: '', clientId: '', startDate: '', endDate: '', price: '' });
   const [loading, setLoading] = useState(false);
@@ -234,7 +229,6 @@ function AddRentalModal({ animals, clients, onClose, onSuccess }: { animals: Ani
   );
 }
 
-// ── App ────────────────────────────────────────────────────────────────────
 export default function App() {
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
   const [animals, setAnimals] = useState<Animal[]>([]);
@@ -258,7 +252,7 @@ export default function App() {
     finally { setLoading(false); }
   };
   const handleSuccess = (msg: string) => { setShowModal(false); setEditAnimal(null); setDeleteAnimal(null); setToast({ message: msg, type: 'success' }); fetchAll(); };
-  const counts = { dashboard: 0, animals: animals.length, clients: clients.length, rentals: rentals.length };
+  const counts = { dashboard: 0, animals: animals.length, clients: clients.length, rentals: rentals.length, calendar: 0 };
   const catCounts = CATEGORIES.map(c => ({ ...c, count: animals.filter(a => a.category === c.value).length }));
   const filteredAnimals = animals.filter(a => categoryFilter === 'all' || a.category === categoryFilter).filter(a => a.name.toLowerCase().includes(search.toLowerCase()) || a.tagNumber.toLowerCase().includes(search.toLowerCase()));
   const filteredClients = clients.filter(c => c.name.toLowerCase().includes(search.toLowerCase()) || c.email.toLowerCase().includes(search.toLowerCase()));
@@ -267,14 +261,15 @@ export default function App() {
     { id: 'dashboard' as Tab, label: 'Dashboard', icon: LayoutDashboard },
     { id: 'animals' as Tab, label: 'Animals', icon: Beef },
     { id: 'clients' as Tab, label: 'Clients', icon: Users },
-    { id: 'rentals' as Tab, label: 'Rentals', icon: Calendar },
+    { id: 'rentals' as Tab, label: 'Rentals', icon: ClipboardList },
+    { id: 'calendar' as Tab, label: 'Calendar', icon: Calendar },
   ];
 
   return (
     <div className="min-h-screen bg-[#F4F6F8] text-[#1A1A1A] font-sans">
       <aside className="fixed left-0 top-0 h-full w-64 bg-white border-r border-slate-200 p-6 z-10 flex flex-col">
         <div className="flex items-center gap-3 mb-8">
-          <div className="w-10 h-10 bg-emerald-600 rounded-xl flex items-center justify-center text-white"><Beef className="w-6 h-6" /></div>
+          <div className="w-10 h-10 bg-emerald-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-emerald-200"><Beef className="w-6 h-6" /></div>
           <div><h1 className="font-black text-lg tracking-tight leading-none">Lucky Clover</h1><p className="text-xs text-slate-400 font-medium">Ranch Manager</p></div>
         </div>
         <nav className="space-y-1">
@@ -282,7 +277,7 @@ export default function App() {
             <button key={item.id} onClick={() => { setActiveTab(item.id); setSearch(''); setCategoryFilter('all'); }}
               className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all ${activeTab === item.id ? 'bg-emerald-50 text-emerald-700 font-semibold' : 'text-slate-500 hover:bg-slate-50'}`}>
               <div className="flex items-center gap-3"><item.icon className="w-5 h-5" />{item.label}</div>
-              {item.id !== 'dashboard' && <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${activeTab === item.id ? 'bg-emerald-200 text-emerald-800' : 'bg-slate-100 text-slate-400'}`}>{counts[item.id]}</span>}
+              {item.id !== 'dashboard' && item.id !== 'calendar' && <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${activeTab === item.id ? 'bg-emerald-200 text-emerald-800' : 'bg-slate-100 text-slate-400'}`}>{counts[item.id]}</span>}
             </button>
           ))}
         </nav>
@@ -297,15 +292,19 @@ export default function App() {
             ))}
           </div>
         </div>
+        <div className="p-4 bg-slate-900 rounded-2xl text-white mt-4">
+          <p className="text-xs text-slate-400 mb-1 font-bold uppercase tracking-wider">API Status</p>
+          <div className="flex items-center gap-2"><div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse" /><p className="text-sm font-semibold">localhost:3000</p></div>
+        </div>
       </aside>
 
       <main className="ml-64 p-10">
         <header className="flex items-center justify-between mb-8">
           <div>
             <h2 className="text-3xl font-black tracking-tight capitalize">{activeTab}</h2>
-            <p className="text-slate-400 text-sm mt-1">{{ dashboard: 'Business overview', animals: 'Manage your herd', clients: 'Manage rental clients', rentals: 'Track rental contracts' }[activeTab]}</p>
+            <p className="text-slate-400 text-sm mt-1">{{ dashboard: 'Business overview', animals: 'Manage your herd', clients: 'Manage rental clients', rentals: 'Track rental contracts', calendar: 'Rental schedule' }[activeTab]}</p>
           </div>
-          {activeTab !== 'dashboard' && (
+          {activeTab !== 'dashboard' && activeTab !== 'calendar' && (
             <div className="flex items-center gap-3">
               <div className="relative"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" /><input value={search} onChange={e => setSearch(e.target.value)} placeholder={`Search ${activeTab}...`} className="pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all w-56 text-sm" /></div>
               <button onClick={() => setShowModal(true)} className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-xl font-bold transition-all text-sm"><Plus className="w-4 h-4" />Add {activeTab.slice(0, -1)}</button>
@@ -317,7 +316,9 @@ export default function App() {
           <AnimatePresence mode="wait">
             <motion.div key={activeTab} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.15 }}>
 
-              {activeTab === 'dashboard' && <Dashboard onCreateRental={() => { setActiveTab('rentals'); setShowModal(true); }} />}
+              {activeTab === 'dashboard' && <Dashboard />}
+
+              {activeTab === 'calendar' && <CalendarView rentals={rentals} animals={animals} />}
 
               {activeTab === 'animals' && (
                 <div>
@@ -335,10 +336,9 @@ export default function App() {
                       return (
                         <motion.div key={animal.id} initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }}
                           className="bg-white border border-slate-200 rounded-2xl p-6 hover:shadow-lg hover:-translate-y-0.5 transition-all group relative">
-                          {/* Edit / Delete buttons */}
-                          <div className="absolute top-4 right-4 flex gap-1 ">
-                            <button onClick={() => setEditAnimal(animal)} className="p-1.5 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"><Pencil className="w-3.5 h-3.5" /></button>
-                            <button onClick={() => setDeleteAnimal(animal)} className="p-1.5 bg-slate-100 hover:bg-red-50 hover:text-red-600 rounded-lg transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
+                          <div className="absolute top-4 right-4 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button onClick={() => setEditAnimal(animal)} className="p-1.5 bg-slate-100 hover:bg-blue-100 hover:text-blue-600 rounded-lg transition-colors"><Pencil className="w-3.5 h-3.5" /></button>
+                            <button onClick={() => setDeleteAnimal(animal)} className="p-1.5 bg-slate-100 hover:bg-rose-100 hover:text-rose-600 rounded-lg transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
                           </div>
                           <div className="flex justify-between items-start mb-4">
                             <div className="w-11 h-11 bg-slate-50 rounded-xl flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">{cat.emoji}</div>
@@ -369,80 +369,29 @@ export default function App() {
                 </div>
               )}
 
-              {activeTab === 'rentals' && (() => {
-                // UI Validation: filter out rentals with illogical date ranges
-                const validRentals = filteredRentals.filter(r => new Date(r.startDate) <= new Date(r.endDate));
-                const now = new Date();
-                return (
+              {activeTab === 'rentals' && (
                 <div className="space-y-3">
-                  {validRentals.length === 0 && <EmptyState icon={Calendar} label="No valid rental records found." />}
-                  {validRentals.map(rental => {
-                    const start = new Date(rental.startDate);
-                    const end = new Date(rental.endDate);
-                    const isCompleted = now > end;
-                    const isActive = start <= now && end >= now;
-                    const daysLeft = Math.ceil((end.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-                    const daysUntil = Math.ceil((start.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-                    return (
-                    <motion.div key={rental.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-white border border-slate-200 rounded-2xl p-5 hover:shadow-md transition-all">
-                      <div className="flex justify-between items-start mb-4">
+                  {filteredRentals.map(rental => (
+                    <motion.div key={rental.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-white border border-slate-200 rounded-2xl p-5 flex items-center justify-between hover:border-emerald-200 hover:shadow-sm transition-all">
+                      <div className="flex items-center gap-5">
+                        <div className="w-12 h-12 bg-slate-50 rounded-xl flex items-center justify-center text-2xl">{getCat(rental.animal?.category ?? 'rodeo').emoji}</div>
                         <div>
-                          <h4 className="text-lg font-bold text-slate-900">
-                            {rental.animal?.name ?? `Animal #${rental.animalId}`}
-                          </h4>
-                          <div className="flex items-center text-slate-500 text-sm mt-1">
-                            <Users className="w-4 h-4 mr-1.5" />
-                            <span className="font-medium text-slate-700">{rental.client?.name ?? `Client #${rental.clientId}`}</span>
-                          </div>
-                        </div>
-                        <span className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold uppercase ${
-                          isCompleted ? 'bg-slate-100 text-slate-600' :
-                          isActive ? 'bg-emerald-100 text-emerald-700' :
-                          'bg-amber-100 text-amber-700'
-                        }`}>
-                          {isCompleted ? 'Completed' : isActive ? 'Active' : 'Pending'}
-                        </span>
-                      </div>
-                      <div className="space-y-3 pt-3 border-t border-slate-100">
-                        <div className="flex justify-between items-center text-sm">
-                          <span className="text-slate-500 flex items-center">
-                            <Calendar className="w-4 h-4 mr-2" />
-                            Schedule
-                          </span>
-                          <span className="font-semibold text-slate-800">
-                            {start.toLocaleDateString()} – {end.toLocaleDateString()}
-                          </span>
-                        </div>
-                        <div className="flex justify-between items-center text-sm">
-                          <span className="text-slate-500 flex items-center">
-                            <DollarSign className="w-4 h-4 mr-2" />
-                            Rental Value
-                          </span>
-                          <span className="font-bold text-slate-900 text-base">
-                            ${Number(rental.price).toLocaleString()}
-                          </span>
+                          <div className="flex items-center gap-2 mb-1"><span className="font-bold text-slate-900">{rental.animal?.name ?? `#${rental.animalId}`}</span><span className="text-slate-300">→</span><span className="text-slate-600">{rental.client?.name ?? `#${rental.clientId}`}</span></div>
+                          <div className="flex items-center gap-4 text-xs text-slate-400"><span>{new Date(rental.startDate).toLocaleDateString()} – {new Date(rental.endDate).toLocaleDateString()}</span><span className="font-bold text-slate-700">${Number(rental.price).toLocaleString()}</span></div>
                         </div>
                       </div>
-                      <div className="mt-4 pt-3 flex items-center justify-center rounded-lg bg-slate-50 text-xs font-bold uppercase tracking-widest">
-                        {isCompleted ? (
-                          <span className="text-slate-400 py-2">Rental Period Completed</span>
-                        ) : isActive ? (
-                          <span className="text-emerald-600 py-2">{daysLeft} Days Remaining</span>
-                        ) : (
-                          <span className="text-amber-600 py-2">Starts in {daysUntil} Days</span>
-                        )}
-                      </div>
+                      <span className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold uppercase ${statusColor(rental.status)}`}>{statusIcon(rental.status)}{rental.status}</span>
                     </motion.div>
-                  )})}
+                  ))}
+                  {filteredRentals.length === 0 && <EmptyState icon={Calendar} label="No rentals found" />}
                 </div>
-              );})()}
+              )}
 
             </motion.div>
           </AnimatePresence>
         )}
       </main>
 
-      {/* Modals */}
       <AnimatePresence>
         {showModal && activeTab === 'animals' && <AddAnimalModal onClose={() => setShowModal(false)} onSuccess={() => handleSuccess('Animal created!')} />}
         {showModal && activeTab === 'clients' && <AddClientModal onClose={() => setShowModal(false)} onSuccess={() => handleSuccess('Client created!')} />}
