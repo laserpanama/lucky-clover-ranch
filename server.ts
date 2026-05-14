@@ -30,13 +30,11 @@ async function startServer() {
   });
 
   // Error handling middleware
-  app.use((err: any, req: Request, res: Response, next: NextFunction) => {
+  app.use((err: Record<string, unknown>, _req: Request, res: Response, _next: NextFunction) => {
     console.error(err.stack || err);
-    res.status(err.status || 500).json({
-      message: err.message || 'Internal Server Error',
-      error: err.message || 'Internal Server Error',
-      details: err.details || null,
-    });
+    const status = typeof err.status === 'number' ? err.status : 500;
+    const message = typeof err.message === 'string' ? err.message : 'Internal Server Error';
+    res.status(status).json({ message, error: message, details: err.details ?? null });
   });
 
   // Vite middleware for development

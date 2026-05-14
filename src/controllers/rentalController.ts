@@ -45,8 +45,8 @@ export const createRental = async (req: Request, res: Response, next: NextFuncti
     const data = rentalSchema.parse(req.body);
     const rental = await rentalService.createRental(data);
     res.status(201).json(rental);
-  } catch (error: any) {
-    if (BUSINESS_ERRORS.includes(error.message)) {
+  } catch (error: unknown) {
+    if (error instanceof Error && BUSINESS_ERRORS.includes(error.message)) {
       return res.status(400).json({ message: error.message });
     }
     next(error);
@@ -58,8 +58,8 @@ export const updateRental = async (req: Request, res: Response, next: NextFuncti
     const data = rentalSchema.partial().parse(req.body);
     const rental = await rentalService.updateRental(Number(req.params.id), data);
     res.json(rental);
-  } catch (error: any) {
-    if (BUSINESS_ERRORS.includes(error.message)) {
+  } catch (error: unknown) {
+    if (error instanceof Error && BUSINESS_ERRORS.includes(error.message)) {
       return res.status(400).json({ message: error.message });
     }
     next(error);

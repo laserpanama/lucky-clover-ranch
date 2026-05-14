@@ -1,735 +1,27 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import {
   Beef,
   Users,
   Calendar,
   Plus,
-  Stethoscope,
-  Tag,
-  CheckCircle2,
-  AlertCircle,
-  Clock,
   Search,
-  X,
-  DollarSign,
-  Phone,
-  Mail,
-  Building2,
-  Hash,
   LayoutDashboard,
-  Pencil,
-  Trash2,
   ClipboardList,
 } from "lucide-react";
 
 import Dashboard from "./Dashboard";
 import CalendarView from "./CalendarView_2";
+import AnimalsPage from "./pages/AnimalsPage";
+import ClientsPage from "./pages/ClientsPage";
+import RentalsPage from "./pages/RentalsPage";
+import { AddAnimalModal, EditAnimalModal, DeleteAnimalModal } from "./components/modals/AnimalModals";
+import { AddClientModal, EditClientModal, DeleteClientModal } from "./components/modals/ClientModals";
+import { AddRentalModal, EditRentalModal, DeleteRentalModal } from "./components/modals/RentalModals";
+import { Toast } from "./components/ui";
 import { apiRequest } from "./lib/api";
-
-interface Animal {
-  id: number;
-  tagNumber: string;
-  name: string;
-  breed: string;
-  status: string;
-  dateOfBirth: string;
-  notes?: string;
-  category: string;
-}
-
-interface Client {
-  id: number;
-  name: string;
-  phone: string;
-  email: string;
-  organization?: string;
-}
-
-interface Rental {
-  id: number;
-  animalId: number;
-  clientId: number;
-  startDate: string;
-  endDate: string;
-  status: string;
-  price: number;
-  animal: Animal;
-  client: Client;
-}
-
-type Tab = "dashboard" | "animals" | "clients" | "rentals" | "calendar";
-
-const CATEGORIES = [
-  { value: "rodeo", label: "Rodeo", emoji: "🤠", color: "bg-amber-50 text-amber-700" },
-  { value: "beef", label: "Beef", emoji: "🥩", color: "bg-rose-50 text-rose-700" },
-  { value: "breeding", label: "Breeding", emoji: "🐃", color: "bg-violet-50 text-violet-700" },
-];
-
-const getCat = (val: string) => CATEGORIES.find((c) => c.value === val) ?? CATEGORIES[0];
-
-function Toast({
-  message,
-  type,
-  onClose,
-}: {
-  key?: React.Key;
-  message: string;
-  type: "success" | "error";
-  onClose: () => void;
-}) {
-  useEffect(() => {
-    const t = setTimeout(onClose, 4500);
-    return () => clearTimeout(t);
-  }, [onClose]);
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 40 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: 40 }}
-      className={`fixed bottom-6 right-6 z-[100] flex items-center gap-3 px-5 py-4 rounded-2xl shadow-2xl text-white font-semibold text-sm max-w-sm ${
-        type === "success" ? "bg-emerald-600" : "bg-rose-600"
-      }`}
-    >
-      {type === "success" ? (
-        <CheckCircle2 className="w-5 h-5 shrink-0" />
-      ) : (
-        <AlertCircle className="w-5 h-5 shrink-0" />
-      )}
-      <span>{message}</span>
-      <button onClick={onClose} className="ml-2 opacity-70 hover:opacity-100">
-        <X className="w-4 h-4" />
-      </button>
-    </motion.div>
-  );
-}
-
-const inputCls =
-  "w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 transition-all";
-
-function Field({
-  label,
-  icon: Icon,
-  children,
-}: {
-  label: string;
-  icon?: any;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="space-y-1.5">
-      <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
-        {Icon && <Icon className="w-3.5 h-3.5" />}
-        {label}
-      </label>
-      {children}
-    </div>
-  );
-}
-
-function ModalActions({
-  onClose,
-  onSubmit,
-  loading,
-  label,
-}: {
-  onClose: () => void;
-  onSubmit: () => void;
-  loading: boolean;
-  label: string;
-}) {
-  return (
-    <div className="flex gap-3 pt-2">
-      <button
-        onClick={onClose}
-        className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 rounded-xl font-bold transition-all text-slate-700"
-      >
-        Cancel
-      </button>
-      <button
-        onClick={onSubmit}
-        disabled={loading}
-        className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white rounded-xl font-bold transition-all flex items-center justify-center gap-2"
-      >
-        {loading && (
-          <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-        )}
-        {loading ? "Saving..." : label}
-      </button>
-    </div>
-  );
-}
-
-function ModalShell({
-  title,
-  onClose,
-  children,
-}: {
-  title: string;
-  onClose: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-6">
-      <motion.div
-        initial={{ scale: 0.95, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        exit={{ scale: 0.95, opacity: 0 }}
-        transition={{ duration: 0.15 }}
-        className="bg-white w-full max-w-md rounded-3xl p-8 shadow-2xl"
-      >
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="text-2xl font-bold">{title}</h3>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-slate-100 rounded-xl transition-colors"
-          >
-            <X className="w-5 h-5 text-slate-400" />
-          </button>
-        </div>
-        {children}
-      </motion.div>
-    </div>
-  );
-}
-
-function EmptyState({ icon: Icon, label }: { icon: any; label: string }) {
-  return (
-    <div className="col-span-full py-20 text-center bg-white border border-dashed border-slate-200 rounded-3xl">
-      <Icon className="w-10 h-10 text-slate-200 mx-auto mb-3" />
-      <p className="text-slate-400 font-medium text-sm">{label}</p>
-    </div>
-  );
-}
-
-const statusColor = (s: string) =>
-  ({
-    healthy: "text-emerald-600 bg-emerald-50",
-    injured: "text-rose-600 bg-rose-50",
-    rented: "text-amber-600 bg-amber-50",
-    active: "text-blue-600 bg-blue-50",
-    completed: "text-slate-500 bg-slate-100",
-  }[s.toLowerCase()] ?? "text-slate-500 bg-slate-100");
-
-const statusIcon = (s: string) =>
-  ({
-    healthy: <CheckCircle2 className="w-3.5 h-3.5" />,
-    completed: <CheckCircle2 className="w-3.5 h-3.5" />,
-    injured: <AlertCircle className="w-3.5 h-3.5" />,
-    rented: <Clock className="w-3.5 h-3.5" />,
-    active: <Clock className="w-3.5 h-3.5" />,
-  }[s.toLowerCase()] ?? null);
-
-function CategorySelector({
-  value,
-  onChange,
-}: {
-  value: string;
-  onChange: (v: string) => void;
-}) {
-  return (
-    <div className="grid grid-cols-3 gap-2">
-      {CATEGORIES.map((cat) => (
-        <button
-          key={cat.value}
-          type="button"
-          onClick={() => onChange(cat.value)}
-          className={`py-2.5 rounded-xl text-sm font-bold border-2 transition-all ${
-            value === cat.value
-              ? "border-emerald-500 bg-emerald-50 text-emerald-700"
-              : "border-slate-200 bg-slate-50 text-slate-500"
-          }`}
-        >
-          {cat.emoji} {cat.label}
-        </button>
-      ))}
-    </div>
-  );
-}
-
-function AddAnimalModal({
-  onClose,
-  onSuccess,
-}: {
-  onClose: () => void;
-  onSuccess: () => void;
-}) {
-  const [form, setForm] = useState({
-    name: "",
-    tagNumber: "",
-    breed: "",
-    status: "active",
-    category: "rodeo",
-    dateOfBirth: "",
-    notes: "",
-  });
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-
-  const submit = async () => {
-    if (!form.name || !form.tagNumber || !form.breed || !form.dateOfBirth) {
-      setError("All fields required.");
-      return;
-    }
-    setLoading(true);
-    setError("");
-    try {
-      await apiRequest("/animals", { method: "POST", body: JSON.stringify(form) });
-      onSuccess();
-    } catch (e: any) {
-      setError(e?.message || "Unexpected error");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <ModalShell title="Add Animal" onClose={onClose}>
-      <div className="space-y-4">
-        <div className="grid grid-cols-2 gap-4">
-          <Field label="Name" icon={Beef}>
-            <input className={inputCls} value={form.name} onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))} placeholder="Toro Bravo 1" />
-          </Field>
-          <Field label="Tag #" icon={Hash}>
-            <input className={inputCls} value={form.tagNumber} onChange={(e) => setForm((p) => ({ ...p, tagNumber: e.target.value }))} placeholder="TB-001" />
-          </Field>
-        </div>
-        <Field label="Category">
-          <CategorySelector value={form.category} onChange={(v) => setForm((p) => ({ ...p, category: v }))} />
-        </Field>
-        <div className="grid grid-cols-2 gap-4">
-          <Field label="Breed">
-            <input className={inputCls} value={form.breed} onChange={(e) => setForm((p) => ({ ...p, breed: e.target.value }))} placeholder="Brahman" />
-          </Field>
-          <Field label="Status">
-            <select className={inputCls} value={form.status} onChange={(e) => setForm((p) => ({ ...p, status: e.target.value }))}>
-              <option value="active">Active</option>
-              <option value="healthy">Healthy</option>
-              <option value="injured">Injured</option>
-              <option value="rented">Rented</option>
-            </select>
-          </Field>
-        </div>
-        <Field label="Date of Birth">
-          <input type="date" className={inputCls} value={form.dateOfBirth} onChange={(e) => setForm((p) => ({ ...p, dateOfBirth: e.target.value }))} />
-        </Field>
-        <Field label="Notes (optional)">
-          <textarea className={inputCls + " resize-none"} rows={2} value={form.notes} onChange={(e) => setForm((p) => ({ ...p, notes: e.target.value }))} />
-        </Field>
-        {error && <p className="text-rose-500 text-sm bg-rose-50 px-4 py-2.5 rounded-xl">{error}</p>}
-        <ModalActions onClose={onClose} onSubmit={submit} loading={loading} label="Create Animal" />
-      </div>
-    </ModalShell>
-  );
-}
-
-function EditAnimalModal({
-  animal,
-  onClose,
-  onSuccess,
-}: {
-  animal: Animal;
-  onClose: () => void;
-  onSuccess: () => void;
-}) {
-  const [form, setForm] = useState({
-    name: animal.name,
-    tagNumber: animal.tagNumber,
-    breed: animal.breed,
-    status: animal.status,
-    category: animal.category ?? "rodeo",
-    dateOfBirth: animal.dateOfBirth?.split("T")[0] || "",
-    notes: animal.notes ?? "",
-  });
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-
-  const submit = async () => {
-    if (!form.name || !form.tagNumber || !form.breed || !form.dateOfBirth) {
-      setError("All fields required.");
-      return;
-    }
-    setLoading(true);
-    setError("");
-    try {
-      await apiRequest(`/animals/${animal.id}`, { method: "PUT", body: JSON.stringify(form) });
-      onSuccess();
-    } catch (e: any) {
-      setError(e?.message || "Unexpected error");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <ModalShell title={`Edit — ${animal.name}`} onClose={onClose}>
-      <div className="space-y-4">
-        <div className="grid grid-cols-2 gap-4">
-          <Field label="Name" icon={Beef}>
-            <input className={inputCls} value={form.name} onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))} />
-          </Field>
-          <Field label="Tag #" icon={Hash}>
-            <input className={inputCls} value={form.tagNumber} onChange={(e) => setForm((p) => ({ ...p, tagNumber: e.target.value }))} />
-          </Field>
-        </div>
-        <Field label="Category">
-          <CategorySelector value={form.category} onChange={(v) => setForm((p) => ({ ...p, category: v }))} />
-        </Field>
-        <div className="grid grid-cols-2 gap-4">
-          <Field label="Breed">
-            <input className={inputCls} value={form.breed} onChange={(e) => setForm((p) => ({ ...p, breed: e.target.value }))} />
-          </Field>
-          <Field label="Status">
-            <select className={inputCls} value={form.status} onChange={(e) => setForm((p) => ({ ...p, status: e.target.value }))}>
-              <option value="active">Active</option>
-              <option value="healthy">Healthy</option>
-              <option value="injured">Injured</option>
-              <option value="rented">Rented</option>
-            </select>
-          </Field>
-        </div>
-        <Field label="Date of Birth">
-          <input type="date" className={inputCls} value={form.dateOfBirth} onChange={(e) => setForm((p) => ({ ...p, dateOfBirth: e.target.value }))} />
-        </Field>
-        <Field label="Notes">
-          <textarea className={inputCls + " resize-none"} rows={2} value={form.notes} onChange={(e) => setForm((p) => ({ ...p, notes: e.target.value }))} />
-        </Field>
-        {error && <p className="text-rose-500 text-sm bg-rose-50 px-4 py-2.5 rounded-xl">{error}</p>}
-        <ModalActions onClose={onClose} onSubmit={submit} loading={loading} label="Save Changes" />
-      </div>
-    </ModalShell>
-  );
-}
-
-function DeleteAnimalModal({
-  animal,
-  onClose,
-  onSuccess,
-}: {
-  animal: Animal;
-  onClose: () => void;
-  onSuccess: () => void;
-}) {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-
-  const confirm = async () => {
-    setLoading(true);
-    try {
-      await apiRequest(`/animals/${animal.id}`, { method: "DELETE" });
-      onSuccess();
-    } catch (e: any) {
-      setError(e?.message || "Unexpected error");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <ModalShell title="Delete Animal" onClose={onClose}>
-      <div className="space-y-6">
-        <div className="flex items-center gap-4 p-4 bg-rose-50 rounded-2xl border border-rose-100">
-          <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center text-2xl shadow-sm">
-            {getCat(animal.category).emoji}
-          </div>
-          <div>
-            <div className="font-bold text-slate-900">{animal.name}</div>
-            <div className="text-sm text-slate-500 font-mono">{animal.tagNumber} · {animal.breed}</div>
-          </div>
-        </div>
-        <p className="text-slate-600 text-sm">
-          This will permanently delete <strong>{animal.name}</strong> and all associated records. This cannot be undone.
-        </p>
-        {error && <p className="text-rose-500 text-sm bg-rose-50 px-4 py-2.5 rounded-xl">{error}</p>}
-        <div className="flex gap-3">
-          <button onClick={onClose} className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 rounded-xl font-bold text-slate-700">Cancel</button>
-          <button onClick={confirm} disabled={loading} className="flex-1 py-3 bg-rose-600 hover:bg-rose-700 disabled:opacity-60 text-white rounded-xl font-bold flex items-center justify-center gap-2">
-            {loading && <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />}
-            {loading ? "Deleting..." : "Delete"}
-          </button>
-        </div>
-      </div>
-    </ModalShell>
-  );
-}
-
-function AddClientModal({
-  onClose,
-  onSuccess,
-}: {
-  onClose: () => void;
-  onSuccess: () => void;
-}) {
-  const [form, setForm] = useState({ name: "", phone: "", email: "", organization: "" });
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-
-  const submit = async () => {
-    if (!form.name || !form.phone || !form.email) {
-      setError("Name, phone and email required.");
-      return;
-    }
-    setLoading(true);
-    setError("");
-    try {
-      await apiRequest("/clients", { method: "POST", body: JSON.stringify(form) });
-      onSuccess();
-    } catch (e: any) {
-      setError(e?.message || "Unexpected error");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <ModalShell title="Add Client" onClose={onClose}>
-      <div className="space-y-4">
-        <Field label="Full Name" icon={Users}>
-          <input className={inputCls} value={form.name} onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))} placeholder="John Doe" />
-        </Field>
-        <div className="grid grid-cols-2 gap-4">
-          <Field label="Phone" icon={Phone}>
-            <input className={inputCls} value={form.phone} onChange={(e) => setForm((p) => ({ ...p, phone: e.target.value }))} placeholder="+507 000 0000" />
-          </Field>
-          <Field label="Email" icon={Mail}>
-            <input className={inputCls} value={form.email} onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))} placeholder="john@ranch.com" />
-          </Field>
-        </div>
-        <Field label="Organization (optional)" icon={Building2}>
-          <input className={inputCls} value={form.organization} onChange={(e) => setForm((p) => ({ ...p, organization: e.target.value }))} placeholder="Texas Rodeo LLC" />
-        </Field>
-        {error && <p className="text-rose-500 text-sm bg-rose-50 px-4 py-2.5 rounded-xl">{error}</p>}
-        <ModalActions onClose={onClose} onSubmit={submit} loading={loading} label="Create Client" />
-      </div>
-    </ModalShell>
-  );
-}
-
-function AddRentalModal({
-  animals,
-  clients,
-  onClose,
-  onSuccess,
-}: {
-  animals: Animal[];
-  clients: Client[];
-  onClose: () => void;
-  onSuccess: () => void;
-}) {
-  const [form, setForm] = useState({ animalId: "", clientId: "", startDate: "", endDate: "", price: "" });
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const rentableAnimals = animals.filter((a) => a.category === "rodeo");
-
-  const submit = async () => {
-    if (!form.animalId || !form.clientId || !form.startDate || !form.endDate || !form.price) {
-      setError("All fields required.");
-      return;
-    }
-    if (new Date(form.startDate) > new Date(form.endDate)) {
-      setError("Start date cannot be after end date.");
-      return;
-    }
-    setLoading(true);
-    setError("");
-    try {
-      await apiRequest("/rentals", {
-        method: "POST",
-        body: JSON.stringify({
-          animalId: Number(form.animalId),
-          clientId: Number(form.clientId),
-          startDate: form.startDate,
-          endDate: form.endDate,
-          price: Number(form.price),
-        }),
-      });
-      onSuccess();
-    } catch (e: any) {
-      setError(e?.message || "Unexpected error");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <ModalShell title="Create Rental" onClose={onClose}>
-      <div className="space-y-4">
-        <Field label="Animal (Rodeo only)" icon={Beef}>
-          <select className={inputCls} value={form.animalId} onChange={(e) => setForm((p) => ({ ...p, animalId: e.target.value }))}>
-            <option value="">Select animal...</option>
-            {rentableAnimals.map((a) => (
-              <option key={a.id} value={a.id}>🤠 {a.name} — {a.tagNumber}</option>
-            ))}
-          </select>
-          {rentableAnimals.length === 0 && <p className="text-xs text-amber-600 mt-1">No rodeo animals yet.</p>}
-        </Field>
-        <Field label="Client" icon={Users}>
-          <select className={inputCls} value={form.clientId} onChange={(e) => setForm((p) => ({ ...p, clientId: e.target.value }))}>
-            <option value="">Select client...</option>
-            {clients.map((c) => (
-              <option key={c.id} value={c.id}>{c.name}{c.organization ? ` (${c.organization})` : ""}</option>
-            ))}
-          </select>
-        </Field>
-        <div className="grid grid-cols-2 gap-4">
-          <Field label="Start Date">
-            <input type="date" className={inputCls} value={form.startDate} onChange={(e) => setForm((p) => ({ ...p, startDate: e.target.value }))} />
-          </Field>
-          <Field label="End Date">
-            <input type="date" className={inputCls} value={form.endDate} onChange={(e) => setForm((p) => ({ ...p, endDate: e.target.value }))} />
-          </Field>
-        </div>
-        <Field label="Price (USD)" icon={DollarSign}>
-          <input type="number" className={inputCls} value={form.price} onChange={(e) => setForm((p) => ({ ...p, price: e.target.value }))} placeholder="500" />
-        </Field>
-        {error && (
-          <div className="flex items-start gap-3 bg-rose-50 border border-rose-200 px-4 py-3 rounded-xl">
-            <AlertCircle className="w-5 h-5 text-rose-500 shrink-0 mt-0.5" />
-            <p className="text-rose-600 text-sm font-semibold">{error}</p>
-          </div>
-        )}
-        <ModalActions onClose={onClose} onSubmit={submit} loading={loading} label="Create Rental" />
-      </div>
-    </ModalShell>
-  );
-}
-
-function EditClientModal({ client, onClose, onSuccess }: { client: Client; onClose: () => void; onSuccess: () => void }) {
-  const [form, setForm] = useState({ name: client.name, phone: client.phone, email: client.email, organization: client.organization ?? "" });
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const submit = async () => {
-    if (!form.name || !form.phone || !form.email) { setError("Name, phone and email required."); return; }
-    setLoading(true); setError("");
-    try { await apiRequest(`/clients/${client.id}`, { method: "PUT", body: JSON.stringify(form) }); onSuccess(); }
-    catch (e: any) { setError(e?.message || "Unexpected error"); }
-    finally { setLoading(false); }
-  };
-  return (
-    <ModalShell title={`Edit — ${client.name}`} onClose={onClose}>
-      <div className="space-y-4">
-        <Field label="Full Name" icon={Users}><input className={inputCls} value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} /></Field>
-        <div className="grid grid-cols-2 gap-4">
-          <Field label="Phone" icon={Phone}><input className={inputCls} value={form.phone} onChange={e => setForm(p => ({ ...p, phone: e.target.value }))} /></Field>
-          <Field label="Email" icon={Mail}><input className={inputCls} value={form.email} onChange={e => setForm(p => ({ ...p, email: e.target.value }))} /></Field>
-        </div>
-        <Field label="Organization" icon={Building2}><input className={inputCls} value={form.organization} onChange={e => setForm(p => ({ ...p, organization: e.target.value }))} /></Field>
-        {error && <p className="text-rose-500 text-sm bg-rose-50 px-4 py-2.5 rounded-xl">{error}</p>}
-        <ModalActions onClose={onClose} onSubmit={submit} loading={loading} label="Save Changes" />
-      </div>
-    </ModalShell>
-  );
-}
-
-function DeleteClientModal({ client, onClose, onSuccess }: { client: Client; onClose: () => void; onSuccess: () => void }) {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const confirm = async () => {
-    setLoading(true);
-    try { await apiRequest(`/clients/${client.id}`, { method: "DELETE" }); onSuccess(); }
-    catch (e: any) { setError(e?.message || "Unexpected error"); }
-    finally { setLoading(false); }
-  };
-  return (
-    <ModalShell title="Delete Client" onClose={onClose}>
-      <div className="space-y-6">
-        <div className="flex items-center gap-4 p-4 bg-rose-50 rounded-2xl border border-rose-100">
-          <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm"><Users className="w-5 h-5 text-rose-500" /></div>
-          <div><div className="font-bold text-slate-900">{client.name}</div><div className="text-sm text-slate-500">{client.email}</div></div>
-        </div>
-        <p className="text-slate-600 text-sm">Permanently delete <strong>{client.name}</strong>? Their rentals will remain but will no longer reference a client.</p>
-        {error && <p className="text-rose-500 text-sm bg-rose-50 px-4 py-2.5 rounded-xl">{error}</p>}
-        <div className="flex gap-3">
-          <button onClick={onClose} className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 rounded-xl font-bold text-slate-700">Cancel</button>
-          <button onClick={confirm} disabled={loading} className="flex-1 py-3 bg-rose-600 hover:bg-rose-700 disabled:opacity-60 text-white rounded-xl font-bold flex items-center justify-center gap-2">
-            {loading && <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />}
-            {loading ? "Deleting..." : "Delete"}
-          </button>
-        </div>
-      </div>
-    </ModalShell>
-  );
-}
-
-function EditRentalModal({ rental, animals, clients, onClose, onSuccess }: { rental: Rental; animals: Animal[]; clients: Client[]; onClose: () => void; onSuccess: () => void }) {
-  const [form, setForm] = useState({
-    animalId: String(rental.animalId),
-    clientId: String(rental.clientId),
-    startDate: rental.startDate?.split("T")[0] || "",
-    endDate: rental.endDate?.split("T")[0] || "",
-    price: String(rental.price),
-  });
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const rodeoAnimals = animals.filter(a => a.category === "rodeo");
-  const submit = async () => {
-    if (!form.startDate || !form.endDate || !form.price) { setError("All fields required."); return; }
-    if (new Date(form.startDate) > new Date(form.endDate)) { setError("Start date cannot be after end date."); return; }
-    setLoading(true); setError("");
-    try {
-      await apiRequest(`/rentals/${rental.id}`, { method: "PUT", body: JSON.stringify({ animalId: Number(form.animalId), clientId: Number(form.clientId), startDate: form.startDate, endDate: form.endDate, price: Number(form.price) }) });
-      onSuccess();
-    } catch (e: any) { setError(e?.message || "Unexpected error"); }
-    finally { setLoading(false); }
-  };
-  return (
-    <ModalShell title="Edit Rental" onClose={onClose}>
-      <div className="space-y-4">
-        <Field label="Animal (Rodeo only)" icon={Beef}>
-          <select className={inputCls} value={form.animalId} onChange={e => setForm(p => ({ ...p, animalId: e.target.value }))}>
-            {rodeoAnimals.map(a => <option key={a.id} value={a.id}>🤠 {a.name} — {a.tagNumber}</option>)}
-          </select>
-        </Field>
-        <Field label="Client" icon={Users}>
-          <select className={inputCls} value={form.clientId} onChange={e => setForm(p => ({ ...p, clientId: e.target.value }))}>
-            {clients.map(c => <option key={c.id} value={c.id}>{c.name}{c.organization ? ` (${c.organization})` : ""}</option>)}
-          </select>
-        </Field>
-        <div className="grid grid-cols-2 gap-4">
-          <Field label="Start Date"><input type="date" className={inputCls} value={form.startDate} onChange={e => setForm(p => ({ ...p, startDate: e.target.value }))} /></Field>
-          <Field label="End Date"><input type="date" className={inputCls} value={form.endDate} onChange={e => setForm(p => ({ ...p, endDate: e.target.value }))} /></Field>
-        </div>
-        <Field label="Price (USD)" icon={DollarSign}><input type="number" className={inputCls} value={form.price} onChange={e => setForm(p => ({ ...p, price: e.target.value }))} /></Field>
-        {error && <div className="flex items-start gap-3 bg-rose-50 border border-rose-200 px-4 py-3 rounded-xl"><AlertCircle className="w-5 h-5 text-rose-500 shrink-0 mt-0.5" /><p className="text-rose-600 text-sm font-semibold">{error}</p></div>}
-        <ModalActions onClose={onClose} onSubmit={submit} loading={loading} label="Save Changes" />
-      </div>
-    </ModalShell>
-  );
-}
-
-function DeleteRentalModal({ rental, onClose, onSuccess }: { rental: Rental; onClose: () => void; onSuccess: () => void }) {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const confirm = async () => {
-    setLoading(true);
-    try { await apiRequest(`/rentals/${rental.id}`, { method: "DELETE" }); onSuccess(); }
-    catch (e: any) { setError(e?.message || "Unexpected error"); }
-    finally { setLoading(false); }
-  };
-  return (
-    <ModalShell title="Delete Rental" onClose={onClose}>
-      <div className="space-y-6">
-        <div className="flex items-center gap-4 p-4 bg-rose-50 rounded-2xl border border-rose-100">
-          <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center text-2xl shadow-sm">{getCat(rental.animal?.category ?? "rodeo").emoji}</div>
-          <div>
-            <div className="font-bold text-slate-900">{rental.animal?.name ?? `#${rental.animalId}`} → {rental.client?.name ?? `#${rental.clientId}`}</div>
-            <div className="text-sm text-slate-500">{new Date(rental.startDate).toLocaleDateString()} – {new Date(rental.endDate).toLocaleDateString()} · ${Number(rental.price).toLocaleString()}</div>
-          </div>
-        </div>
-        <p className="text-slate-600 text-sm">Permanently delete this rental contract? This cannot be undone.</p>
-        {error && <p className="text-rose-500 text-sm bg-rose-50 px-4 py-2.5 rounded-xl">{error}</p>}
-        <div className="flex gap-3">
-          <button onClick={onClose} className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 rounded-xl font-bold text-slate-700">Cancel</button>
-          <button onClick={confirm} disabled={loading} className="flex-1 py-3 bg-rose-600 hover:bg-rose-700 disabled:opacity-60 text-white rounded-xl font-bold flex items-center justify-center gap-2">
-            {loading && <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />}
-            {loading ? "Deleting..." : "Delete"}
-          </button>
-        </div>
-      </div>
-    </ModalShell>
-  );
-}
+import { CATEGORIES } from "./lib/constants";
+import { Animal, Client, Rental, Tab } from "./types";
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<Tab>("dashboard");
@@ -780,13 +72,37 @@ export default function App() {
     fetchAll();
   };
 
-  const counts = { dashboard: 0, animals: animals.length, clients: clients.length, rentals: rentals.length, calendar: 0 };
-  const catCounts = CATEGORIES.map((c) => ({ ...c, count: animals.filter((a) => a.category === c.value).length }));
+  const counts: Record<Tab, number> = {
+    dashboard: 0,
+    animals: animals.length,
+    clients: clients.length,
+    rentals: rentals.length,
+    calendar: 0,
+  };
+
+  const catCounts = CATEGORIES.map((c) => ({
+    ...c,
+    count: animals.filter((a) => a.category === c.value).length,
+  }));
+
   const filteredAnimals = animals
     .filter((a) => categoryFilter === "all" || a.category === categoryFilter)
-    .filter((a) => a.name.toLowerCase().includes(search.toLowerCase()) || a.tagNumber.toLowerCase().includes(search.toLowerCase()));
-  const filteredClients = clients.filter((c) => c.name.toLowerCase().includes(search.toLowerCase()) || c.email.toLowerCase().includes(search.toLowerCase()));
-  const filteredRentals = rentals.filter((r) => (r.animal?.name || "").toLowerCase().includes(search.toLowerCase()) || (r.client?.name || "").toLowerCase().includes(search.toLowerCase()));
+    .filter((a) =>
+      a.name.toLowerCase().includes(search.toLowerCase()) ||
+      a.tagNumber.toLowerCase().includes(search.toLowerCase())
+    );
+
+  const filteredClients = clients.filter(
+    (c) =>
+      c.name.toLowerCase().includes(search.toLowerCase()) ||
+      c.email.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const filteredRentals = rentals.filter(
+    (r) =>
+      (r.animal?.name || "").toLowerCase().includes(search.toLowerCase()) ||
+      (r.client?.name || "").toLowerCase().includes(search.toLowerCase())
+  );
 
   const navItems = [
     { id: "dashboard" as Tab, label: "Dashboard", icon: LayoutDashboard },
@@ -795,6 +111,20 @@ export default function App() {
     { id: "rentals" as Tab, label: "Rentals", icon: ClipboardList },
     { id: "calendar" as Tab, label: "Calendar", icon: Calendar },
   ];
+
+  const addLabels: Partial<Record<Tab, string>> = {
+    animals: "Animal",
+    clients: "Client",
+    rentals: "Rental",
+  };
+
+  const tabDescriptions: Record<Tab, string> = {
+    dashboard: "Business overview",
+    animals: "Manage your herd",
+    clients: "Manage rental clients",
+    rentals: "Track rental contracts",
+    calendar: "Rental schedule",
+  };
 
   return (
     <div className="min-h-screen bg-[#F4F6F8] text-[#1A1A1A] font-sans">
@@ -858,11 +188,9 @@ export default function App() {
         <header className="flex items-center justify-between mb-8">
           <div>
             <h2 className="text-3xl font-black tracking-tight capitalize">{activeTab}</h2>
-            <p className="text-slate-400 text-sm mt-1">
-              {{ dashboard: "Business overview", animals: "Manage your herd", clients: "Manage rental clients", rentals: "Track rental contracts", calendar: "Rental schedule" }[activeTab]}
-            </p>
+            <p className="text-slate-400 text-sm mt-1">{tabDescriptions[activeTab]}</p>
           </div>
-          {activeTab !== "dashboard" && activeTab !== "calendar" && (
+          {addLabels[activeTab] && (
             <div className="flex items-center gap-3">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -878,7 +206,7 @@ export default function App() {
                 className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-xl font-bold transition-all text-sm"
               >
                 <Plus className="w-4 h-4" />
-                Add {{ animals: "Animal", clients: "Client", rentals: "Rental" }[activeTab] ?? activeTab}
+                Add {addLabels[activeTab]}
               </button>
             </div>
           )}
@@ -890,151 +218,86 @@ export default function App() {
           </div>
         ) : (
           <AnimatePresence mode="wait">
-            <motion.div key={activeTab} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.15 }}>
-
+            <motion.div
+              key={activeTab}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.15 }}
+            >
               {activeTab === "dashboard" && (
                 <Dashboard onCreateRental={() => { setActiveTab("rentals"); setShowModal(true); }} />
               )}
 
-              {activeTab === "calendar" && <CalendarView rentals={rentals} animals={animals} />}
+              {activeTab === "calendar" && (
+                <CalendarView rentals={rentals} animals={animals} />
+              )}
 
               {activeTab === "animals" && (
-                <div>
-                  <div className="flex items-center gap-2 mb-6 flex-wrap">
-                    <button onClick={() => setCategoryFilter("all")} className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${categoryFilter === "all" ? "bg-slate-800 text-white" : "bg-white text-slate-500 border border-slate-200"}`}>
-                      All ({animals.length})
-                    </button>
-                    {CATEGORIES.map((cat) => (
-                      <button key={cat.value} onClick={() => setCategoryFilter(cat.value)} className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${categoryFilter === cat.value ? "bg-slate-800 text-white" : "bg-white text-slate-500 border border-slate-200"}`}>
-                        {cat.emoji} {cat.label} ({animals.filter((a) => a.category === cat.value).length})
-                      </button>
-                    ))}
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                    {filteredAnimals.map((animal) => {
-                      const cat = getCat(animal.category);
-                      return (
-                        <motion.div key={animal.id} initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} className="bg-white border border-slate-200 rounded-2xl p-6 hover:shadow-lg hover:-translate-y-0.5 transition-all group relative">
-                          <div className="absolute top-4 right-4 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button onClick={() => setEditAnimal(animal)} className="p-1.5 bg-slate-100 hover:bg-blue-100 hover:text-blue-600 rounded-lg transition-colors"><Pencil className="w-3.5 h-3.5" /></button>
-                            <button onClick={() => setDeleteAnimal(animal)} className="p-1.5 bg-slate-100 hover:bg-rose-100 hover:text-rose-600 rounded-lg transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
-                          </div>
-                          <div className="flex justify-between items-start mb-4">
-                            <div className="w-11 h-11 bg-slate-50 rounded-xl flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">{cat.emoji}</div>
-                            <div className="flex flex-col items-end gap-1.5 mr-12">
-                              <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${cat.color}`}>{cat.label}</span>
-                              <span className={`flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold ${statusColor(animal.status)}`}>{statusIcon(animal.status)}{animal.status}</span>
-                            </div>
-                          </div>
-                          <h3 className="text-lg font-bold mb-1">{animal.name}</h3>
-                          <div className="flex items-center gap-2 text-slate-400 text-sm">
-                            <Tag className="w-3.5 h-3.5" />
-                            <span className="font-mono font-semibold text-slate-600">{animal.tagNumber}</span>
-                            <span className="text-slate-200">|</span>
-                            <span>{animal.breed}</span>
-                          </div>
-                          <div className="mt-4 pt-4 border-t border-slate-100 flex items-center justify-between">
-                            <div className="flex items-center gap-1.5 text-xs text-slate-400">
-                              <Stethoscope className="w-3.5 h-3.5" />
-                              <span>Born {new Date(animal.dateOfBirth).getFullYear()}</span>
-                            </div>
-                          </div>
-                        </motion.div>
-                      );
-                    })}
-                    {filteredAnimals.length === 0 && <EmptyState icon={Beef} label="No animals found" />}
-                  </div>
-                </div>
+                <AnimalsPage
+                  animals={animals}
+                  filteredAnimals={filteredAnimals}
+                  categoryFilter={categoryFilter}
+                  onCategoryFilter={setCategoryFilter}
+                  onEdit={setEditAnimal}
+                  onDelete={setDeleteAnimal}
+                />
               )}
 
               {activeTab === "clients" && (
-                <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden">
-                  <table className="w-full text-left">
-                    <thead>
-                      <tr className="border-b border-slate-100 bg-slate-50">
-                        <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Name</th>
-                        <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Contact</th>
-                        <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Organization</th>
-                        <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider text-right">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100">
-                      {filteredClients.map((client) => (
-                        <tr key={client.id} className="hover:bg-slate-50/60 group">
-                          <td className="px-6 py-4 font-bold text-slate-800">{client.name}</td>
-                          <td className="px-6 py-4">
-                            <div className="text-sm text-slate-600">{client.email}</div>
-                            <div className="text-xs text-slate-400">{client.phone}</div>
-                          </td>
-                          <td className="px-6 py-4">
-                            <span className="px-3 py-1 bg-slate-100 text-slate-500 rounded-lg text-xs font-semibold">{client.organization || "Individual"}</span>
-                          </td>
-                          <td className="px-6 py-4 text-right">
-                            <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <button onClick={() => setEditClient(client)} className="p-1.5 bg-slate-100 hover:bg-blue-100 hover:text-blue-600 rounded-lg transition-colors"><Pencil className="w-3.5 h-3.5" /></button>
-                              <button onClick={() => setDeleteClient(client)} className="p-1.5 bg-slate-100 hover:bg-rose-100 hover:text-rose-600 rounded-lg transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                  {filteredClients.length === 0 && <EmptyState icon={Users} label="No clients found" />}
-                </div>
+                <ClientsPage
+                  filteredClients={filteredClients}
+                  onEdit={setEditClient}
+                  onDelete={setDeleteClient}
+                />
               )}
 
               {activeTab === "rentals" && (
-                <div className="space-y-3">
-                  {filteredRentals.map((rental) => (
-                    <motion.div key={rental.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-white border border-slate-200 rounded-2xl p-5 flex items-center justify-between hover:border-emerald-200 hover:shadow-sm transition-all group">
-                      <div className="flex items-center gap-5">
-                        <div className="w-12 h-12 bg-slate-50 rounded-xl flex items-center justify-center text-2xl">{getCat(rental.animal?.category ?? "rodeo").emoji}</div>
-                        <div>
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="font-bold text-slate-900">{rental.animal?.name ?? `#${rental.animalId}`}</span>
-                            <span className="text-slate-300">→</span>
-                            <span className="text-slate-600">{rental.client?.name ?? `#${rental.clientId}`}</span>
-                          </div>
-                          <div className="flex items-center gap-4 text-xs text-slate-400">
-                            <span>{new Date(rental.startDate).toLocaleDateString()} – {new Date(rental.endDate).toLocaleDateString()}</span>
-                            <span className="font-bold text-slate-700">${Number(rental.price).toLocaleString()}</span>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <span className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold uppercase ${statusColor(rental.status)}`}>
-                          {statusIcon(rental.status)}{rental.status}
-                        </span>
-                        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button onClick={() => setEditRental(rental)} className="p-1.5 bg-slate-100 hover:bg-blue-100 hover:text-blue-600 rounded-lg transition-colors"><Pencil className="w-3.5 h-3.5" /></button>
-                          <button onClick={() => setDeleteRental(rental)} className="p-1.5 bg-slate-100 hover:bg-rose-100 hover:text-rose-600 rounded-lg transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
-                        </div>
-                      </div>
-                    </motion.div>
-                  ))}
-                  {filteredRentals.length === 0 && <EmptyState icon={Calendar} label="No rentals found" />}
-                </div>
+                <RentalsPage
+                  filteredRentals={filteredRentals}
+                  onEdit={setEditRental}
+                  onDelete={setDeleteRental}
+                />
               )}
-
             </motion.div>
           </AnimatePresence>
         )}
       </main>
 
       <AnimatePresence>
-        {showModal && activeTab === "animals" && <AddAnimalModal onClose={() => setShowModal(false)} onSuccess={() => handleSuccess("Animal created!")} />}
-        {showModal && activeTab === "clients" && <AddClientModal onClose={() => setShowModal(false)} onSuccess={() => handleSuccess("Client created!")} />}
-        {showModal && activeTab === "rentals" && <AddRentalModal animals={animals} clients={clients} onClose={() => setShowModal(false)} onSuccess={() => handleSuccess("Rental created!")} />}
-        {editAnimal && <EditAnimalModal animal={editAnimal} onClose={() => setEditAnimal(null)} onSuccess={() => handleSuccess("Animal updated!")} />}
-        {deleteAnimal && <DeleteAnimalModal animal={deleteAnimal} onClose={() => setDeleteAnimal(null)} onSuccess={() => handleSuccess("Animal deleted.")} />}
-        {editClient && <EditClientModal client={editClient} onClose={() => setEditClient(null)} onSuccess={() => handleSuccess("Client updated!")} />}
-        {deleteClient && <DeleteClientModal client={deleteClient} onClose={() => setDeleteClient(null)} onSuccess={() => handleSuccess("Client deleted.")} />}
-        {editRental && <EditRentalModal rental={editRental} animals={animals} clients={clients} onClose={() => setEditRental(null)} onSuccess={() => handleSuccess("Rental updated!")} />}
-        {deleteRental && <DeleteRentalModal rental={deleteRental} onClose={() => setDeleteRental(null)} onSuccess={() => handleSuccess("Rental deleted.")} />}
+        {showModal && activeTab === "animals" && (
+          <AddAnimalModal onClose={() => setShowModal(false)} onSuccess={() => handleSuccess("Animal created!")} />
+        )}
+        {showModal && activeTab === "clients" && (
+          <AddClientModal onClose={() => setShowModal(false)} onSuccess={() => handleSuccess("Client created!")} />
+        )}
+        {showModal && activeTab === "rentals" && (
+          <AddRentalModal animals={animals} clients={clients} onClose={() => setShowModal(false)} onSuccess={() => handleSuccess("Rental created!")} />
+        )}
+        {editAnimal && (
+          <EditAnimalModal animal={editAnimal} onClose={() => setEditAnimal(null)} onSuccess={() => handleSuccess("Animal updated!")} />
+        )}
+        {deleteAnimal && (
+          <DeleteAnimalModal animal={deleteAnimal} onClose={() => setDeleteAnimal(null)} onSuccess={() => handleSuccess("Animal deleted.")} />
+        )}
+        {editClient && (
+          <EditClientModal client={editClient} onClose={() => setEditClient(null)} onSuccess={() => handleSuccess("Client updated!")} />
+        )}
+        {deleteClient && (
+          <DeleteClientModal client={deleteClient} onClose={() => setDeleteClient(null)} onSuccess={() => handleSuccess("Client deleted.")} />
+        )}
+        {editRental && (
+          <EditRentalModal rental={editRental} animals={animals} clients={clients} onClose={() => setEditRental(null)} onSuccess={() => handleSuccess("Rental updated!")} />
+        )}
+        {deleteRental && (
+          <DeleteRentalModal rental={deleteRental} onClose={() => setDeleteRental(null)} onSuccess={() => handleSuccess("Rental deleted.")} />
+        )}
       </AnimatePresence>
 
       <AnimatePresence>
-        {toast && <Toast key={toast.message} message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+        {toast && (
+          <Toast key={toast.message} message={toast.message} type={toast.type} onClose={() => setToast(null)} />
+        )}
       </AnimatePresence>
     </div>
   );
