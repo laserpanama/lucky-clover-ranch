@@ -112,6 +112,7 @@ export function Toast({
   type,
   onClose,
 }: {
+  key?: React.Key;
   message: string;
   type: "success" | "error";
   onClose: () => void;
