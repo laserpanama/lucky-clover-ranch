@@ -76,8 +76,11 @@ export default function Dashboard({
   const [animals, setAnimals] = useState<Animal[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
 
   useEffect(() => {
+    setLoading(true);
+    setError(null);
     Promise.all([apiRequest<Rental[]>("/rentals"), apiRequest<Animal[]>("/animals")])
       .then(([r, a]) => {
         setRentals(Array.isArray(r) ? r : []);
@@ -85,7 +88,7 @@ export default function Dashboard({
       })
       .catch(() => setError("Failed to load dashboard data. Please refresh."))
       .finally(() => setLoading(false));
-  }, []);
+  }, [retryCount]);
 
   const now = new Date();
   now.setHours(0, 0, 0, 0); // compare at day boundary
@@ -149,7 +152,7 @@ export default function Dashboard({
         <div className="text-center">
           <p className="text-rose-500 font-semibold mb-2">{error}</p>
           <button
-            onClick={() => { setError(null); setLoading(true); }}
+            onClick={() => setRetryCount((n) => n + 1)}
             className="text-sm text-emerald-600 hover:underline"
           >
             Try again
