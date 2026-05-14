@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { motion } from "motion/react";
 import {
   DollarSign,
@@ -9,6 +9,7 @@ import {
   Plus,
 } from "lucide-react";
 import { apiRequest } from "./lib/api";
+import { localDate } from "./lib/dates";
 
 interface Animal {
   id: number;
@@ -40,7 +41,7 @@ function StatCard({
   label: string;
   value: string;
   sub?: string;
-  icon: any;
+  icon: React.ComponentType<{ className?: string }>;
   delay: number;
 }) {
   return (
@@ -74,6 +75,7 @@ export default function Dashboard({
   const [rentals, setRentals] = useState<Rental[]>([]);
   const [animals, setAnimals] = useState<Animal[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     Promise.all([apiRequest<Rental[]>("/rentals"), apiRequest<Animal[]>("/animals")])
@@ -81,6 +83,7 @@ export default function Dashboard({
         setRentals(Array.isArray(r) ? r : []);
         setAnimals(Array.isArray(a) ? a : []);
       })
+      .catch(() => setError("Failed to load dashboard data. Please refresh."))
       .finally(() => setLoading(false));
   }, []);
 
@@ -88,9 +91,6 @@ export default function Dashboard({
   now.setHours(0, 0, 0, 0); // compare at day boundary
 
   const in7Days = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-
-  // Helper: parse ISO date string as local date (avoids UTC shift)
-  const localDate = (s: string) => new Date(s.includes('T') ? s : s + 'T00:00:00');
 
   const validRentals = rentals.filter((r) => localDate(r.startDate) <= localDate(r.endDate));
 
@@ -126,7 +126,7 @@ export default function Dashboard({
 
   const rentedAnimalIds = new Set(activeRentals.map((r) => r.animalId));
   // Availability only counts rodeo animals
-  const rodeoAnimals = animals.filter((a) => (a as any).category === 'rodeo');
+  const rodeoAnimals = animals.filter((a) => a.category === 'rodeo');
   const availableAnimals = rodeoAnimals.filter((a) => !rentedAnimalIds.has(a.id));
 
   // Avg value: safe division
@@ -139,6 +139,22 @@ export default function Dashboard({
     return (
       <div className="flex items-center justify-center h-64">
         <div className="w-8 h-8 border-[3px] border-emerald-600 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <p className="text-rose-500 font-semibold mb-2">{error}</p>
+          <button
+            onClick={() => { setError(null); setLoading(true); }}
+            className="text-sm text-emerald-600 hover:underline"
+          >
+            Try again
+          </button>
+        </div>
       </div>
     );
   }
